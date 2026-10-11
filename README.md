@@ -1,12 +1,12 @@
 # Backend - PWA del Videojuego (Comunidad y Lore)
 
-Repositorio que contiene el código fuente del backend para la Progressive Web App (PWA) oficial del videojuego. Esta API RESTful centraliza la interacción de la comunidad, la exposición del arte del juego y el progreso de los jugadores.
+Repositorio que contiene el código fuente del backend para la Progressive Web App (PWA) oficial del videojuego y la conexion entre el juego y la base de datos. Esta API RESTful centraliza la interacción de la comunidad, la muestra de arte conceptual del juego y el progreso de los jugadores.
 
 ## Tecnologías y Herramientas
 
-*   **Framework:** [Ej. Spring Boot 3.x / Express.js]
-*   **Lenguaje:** [Ej. Java 17 / Node.js]
-*   **Base de Datos:** [Ej. PostgreSQL / MySQL]
+*   **Framework:** Springboot 4.1.1
+*   **Lenguaje:** Java 21
+*   **Base de Datos:** PostgreSQL
 *   **Autenticación:** [Ej. JWT (JSON Web Tokens)]
 
 ## Características Principales
@@ -19,8 +19,7 @@ Repositorio que contiene el código fuente del backend para la Progressive Web A
 ## Requisitos Previos
 
 *   [Java Development Kit (JDK) 17+ o entorno de Node.js]
-*   [Maven o npm/yarn]
-*   [Gestor de base de datos local o en contenedor Docker, ej. PostgreSQL]
+ *   [Gestor de base de datos local o en contenedor Docker, ej. PostgreSQL]
 
 ## Instalación y Ejecución Local
 
