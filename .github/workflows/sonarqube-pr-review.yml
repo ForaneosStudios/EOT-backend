@@ -47,3 +47,4 @@ jobs:
             -Dsonar.organization=foraneosstudios \
             -Dsonar.qualitygate.wait=true \
             -Dspring.profiles.active=test
+            -Dsonar.exclusions=src/main/resources/**/*.sql
