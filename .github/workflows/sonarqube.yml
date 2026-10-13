@@ -46,12 +46,12 @@ jobs:
       - name: Run H2 tests and SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: >-
           ./mvnw -B verify
-          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar
           -Dsonar.projectKey=integrador-pwa-backend
-          -Dsonar.host.url="$SONAR_HOST_URL"
+          -Dsonar.organization=foraneosstudios
+          -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.token="$SONAR_TOKEN"
           -Dsonar.qualitygate.wait=true
           -Dsonar.qualitygate.timeout=300
