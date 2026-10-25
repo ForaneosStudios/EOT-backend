@@ -1,51 +1,43 @@
 package com.EOT.project.controller;
 
-import com.EOT.project.dto.request.UserRequestDTO;
-import com.EOT.project.dto.request.UserLoginRequestDTO;
+import com.EOT.project.dto.request.CreateProfileRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
+import com.EOT.project.service.CurrentUserService;
 import com.EOT.project.service.UserService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.UUID;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class UserController {
-
     private final UserService userService;
+    private final CurrentUserService currentUserService;
 
     @GetMapping
-    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
-        return ResponseEntity.ok(userService.findAll());
-    }
+    public List<UserResponseDTO> getAllUsers() { return userService.findAll(); }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable UUID id) {
-        return ResponseEntity.ok(userService.findById(id));
+    public UserResponseDTO getUserById(@PathVariable UUID id) { return userService.findById(id); }
+
+    @GetMapping("/me")
+    public UserResponseDTO currentUser(Authentication authentication) {
+        return UserResponseDTO.fromModel(currentUserService.requireProfile(authentication));
     }
 
-    @PostMapping
-    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserRequestDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(dto));
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<UserResponseDTO> login(@Valid @RequestBody UserLoginRequestDTO dto) {
-        return ResponseEntity.ok(userService.login(dto));
+    @PostMapping("/me/profile")
+    public ResponseEntity<UserResponseDTO> createProfile(Authentication authentication,
+                                                          @Valid @RequestBody CreateProfileRequest dto) {
+        Jwt token = (Jwt) authentication.getPrincipal();
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createProfile(
+                UUID.fromString(token.getSubject()), token.getClaimAsString("email"), dto));
     }
 
     @DeleteMapping("/{id}")

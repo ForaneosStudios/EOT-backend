@@ -34,3 +34,4 @@ build/
 
 # Credenciales locales de Docker/Spring
 .env
+.env.supabase.local

@@ -11,4 +11,8 @@ public record UserLoginRequestDTO(
         @NotBlank(message = "La contraseña es obligatoria")
         String password
 ) {
+    @Override
+    public String toString() {
+        return "UserLoginRequestDTO[email=" + email + ", password=[PROTECTED]]";
+    }
 }
