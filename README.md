@@ -149,3 +149,23 @@ backend usa el JWKS local y las migraciones se aplican en el primer inicio.
 Las migraciones en `supabase/migrations` preparan la base local desde cero. No
 ejecutes `supabase db push` contra el proyecto remoto sin revisar y reconciliar
 primero el historial: algunas migraciones ya fueron aplicadas por separado.
+
+## Análisis estático con SonarQube
+
+El workflow `.github/workflows/sonarqube.yml` compila el backend, ejecuta las
+pruebas, genera cobertura XML con JaCoCo y publica el análisis. Se ejecuta en
+pull requests y pushes dirigidos a `develop` o `main`; también puede iniciarse
+manualmente. El job espera el Quality Gate y falla si SonarQube lo rechaza.
+
+Configura en GitHub, dentro de `Settings > Secrets and variables > Actions`:
+
+- Secret `SONAR_TOKEN`: token de análisis generado en SonarQube.
+- Variable `SONAR_PROJECT_KEY`: clave exacta del proyecto.
+- Variable `SONAR_ORGANIZATION`: clave de la organización; es obligatoria en
+  SonarQube Cloud y opcional en un servidor propio.
+- Variable opcional `SONAR_HOST_URL`: URL del servidor. Si no existe, se usa
+  `https://sonarcloud.io`.
+
+Si el proyecto de SonarQube Cloud ya usa análisis automático, desactívalo en
+`Administration > Analysis Method` antes de habilitar este workflow. SonarQube
+no permite ejecutar análisis automático y análisis mediante CI a la vez.
