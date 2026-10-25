@@ -23,6 +23,48 @@ Repositorio que contiene el código fuente del backend para la Progressive Web A
 
 ## Instalación y Ejecución Local
 
+### H2 (recomendado para pruebas rápidas)
+
+No requiere Docker. Arranca la API y carga el dataset de prueba:
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=h2"
+```
+
+La consola queda disponible en `http://localhost:8080/h2-console` con JDBC URL
+`jdbc:h2:mem:eot`, usuario `sa` y contraseña vacía. Para ejecutar los tests:
+
+```powershell
+mvn test
+```
+
+### PostgreSQL local con Docker
+
+1. (Opcional) copia `.env.example` a `.env` y ajusta las credenciales.
+2. Inicia PostgreSQL y espera a que esté saludable:
+
+```powershell
+docker compose up -d
+docker compose ps
+```
+
+PostgreSQL queda publicado en `localhost:5433` para no interferir con otra
+instalación local que use el puerto estándar 5432.
+
+3. Arranca la API contra el contenedor:
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=postgres"
+```
+
+El contenedor inicializa el esquema y el dataset de `src/main/resources/data.sql`
+solo al crearse el volumen. Para reinicializar por completo la base local:
+
+```powershell
+docker compose down -v
+docker compose up -d
+```
+
 1. **Clonar el repositorio:**
    ```bash
    git clone [https://github.com/tu-usuario/repo-backend-juego.git](https://github.com/tu-usuario/repo-backend-juego.git)
