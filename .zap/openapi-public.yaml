@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: EOT public API surface for DAST
+  version: 1.0.0
+  description: Public read-only routes scanned against the ephemeral H2 CI instance.
+servers:
+  - url: http://127.0.0.1:8080
+paths:
+  /api/v1/categories:
+    get:
+      operationId: listCategories
+      responses:
+        "200":
+          description: Categories returned
+  /api/v1/categories/{id}:
+    get:
+      operationId: getCategory
+      parameters:
+        - $ref: "#/components/parameters/CategoryId"
+      responses:
+        "200":
+          description: Category returned
+        "404":
+          description: Category not found
+  /api/v1/threads:
+    get:
+      operationId: listThreads
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          example: 10eebc99-9c0b-4ef8-bb6d-6bb9bd380a01
+      responses:
+        "200":
+          description: Threads returned
+  /api/v1/threads/{id}:
+    get:
+      operationId: getThread
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 20eebc99-9c0b-4ef8-bb6d-6bb9bd380a01
+      responses:
+        "200":
+          description: Thread returned
+        "404":
+          description: Thread not found
+  /api/v1/posts:
+    get:
+      operationId: listPostsByThread
+      parameters:
+        - name: threadId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 20eebc99-9c0b-4ef8-bb6d-6bb9bd380a02
+      responses:
+        "200":
+          description: Posts returned
+  /api/v1/achievements:
+    get:
+      operationId: listPublicAchievements
+      parameters:
+        - name: includeHidden
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Public achievements returned
+        "403":
+          description: Hidden achievements require an administrator
+  /api/v1/achievements/{id}:
+    get:
+      operationId: getAchievement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 40eebc99-9c0b-4ef8-bb6d-6bb9bd380a01
+      responses:
+        "200":
+          description: Achievement returned
+        "404":
+          description: Achievement not found
+components:
+  parameters:
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 10eebc99-9c0b-4ef8-bb6d-6bb9bd380a01
