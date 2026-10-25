@@ -37,7 +37,7 @@ public class SecurityConfig {
         if (issuer.isBlank()) {
             return token -> { throw new BadJwtException("Supabase Auth issuer is not configured"); };
         }
-        String normalizedIssuer = issuer.replaceAll("/+$", "");
+        String normalizedIssuer = trimTrailingSlashes(issuer);
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(normalizedIssuer + "/.well-known/jwks.json")
                 .jwsAlgorithm(SignatureAlgorithm.ES256)
                 .jwsAlgorithm(SignatureAlgorithm.RS256)
@@ -52,9 +52,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, UserRepository users, JwtDecoder decoder) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, UserRepository users, JwtDecoder decoder) {
         http
-            .csrf(csrf -> csrf.disable()) // Stateless Bearer tokens, not browser cookie authentication.
+            // API clients authenticate with an explicit Bearer token, never with
+            // automatically attached browser cookies. Keep CSRF enabled by default
+            // and ignore only the stateless API and the local H2 console.
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
             .cors(cors -> {})
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
@@ -71,8 +74,8 @@ public class SecurityConfig {
                 UUID authId;
                 try {
                     authId = UUID.fromString(token.getSubject());
-                } catch (RuntimeException ex) {
-                    throw new BadCredentialsException("Invalid subject");
+                } catch (IllegalArgumentException ex) {
+                    throw new BadCredentialsException("Invalid subject", ex);
                 }
                 var authorities = users.findByAuthUserIdAndIsDeletedFalse(authId)
                         .map(user -> List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
@@ -80,6 +83,14 @@ public class SecurityConfig {
                 return new JwtAuthenticationToken(token, authorities, authId.toString());
             })));
         return http.build();
+    }
+
+    private static String trimTrailingSlashes(String value) {
+        int end = value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(0, end);
     }
 
     @Bean

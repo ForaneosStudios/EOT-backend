@@ -47,11 +47,15 @@ class SecurityConfigTest {
             SignedJWT ecToken = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID("ec-key").build(), ecClaims);
             ecToken.sign(new ECDSASigner(ecKey));
             assertNotNull(decoder.decode(ecToken.serialize()));
-            assertThrows(JwtException.class, () -> decoder.decode(sign(signingKey, issuer + "/other", "authenticated", Instant.now().plusSeconds(300))));
-            assertThrows(JwtException.class, () -> decoder.decode(sign(signingKey, issuer, "other", Instant.now().plusSeconds(300))));
-            assertThrows(JwtException.class, () -> decoder.decode(sign(signingKey, issuer, "authenticated", Instant.now().minusSeconds(600))));
+            String wrongIssuer = sign(signingKey, issuer + "/other", "authenticated", Instant.now().plusSeconds(300));
+            String wrongAudience = sign(signingKey, issuer, "other", Instant.now().plusSeconds(300));
+            String expired = sign(signingKey, issuer, "authenticated", Instant.now().minusSeconds(600));
+            assertThrows(JwtException.class, () -> decoder.decode(wrongIssuer));
+            assertThrows(JwtException.class, () -> decoder.decode(wrongAudience));
+            assertThrows(JwtException.class, () -> decoder.decode(expired));
             RSAKey otherKey = new RSAKeyGenerator(2048).keyID("test-key").generate();
-            assertThrows(JwtException.class, () -> decoder.decode(sign(otherKey, issuer, "authenticated", Instant.now().plusSeconds(300))));
+            String unknownSignature = sign(otherKey, issuer, "authenticated", Instant.now().plusSeconds(300));
+            assertThrows(JwtException.class, () -> decoder.decode(unknownSignature));
         } finally {
             server.stop(0);
         }
