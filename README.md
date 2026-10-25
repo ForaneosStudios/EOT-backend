@@ -159,12 +159,12 @@ manualmente. El job espera el Quality Gate y falla si SonarQube lo rechaza.
 
 Configura en GitHub, dentro de `Settings > Secrets and variables > Actions`:
 
-- Secret `SONAR_TOKEN`: token de análisis generado en SonarQube.
-- Variable `SONAR_PROJECT_KEY`: clave exacta del proyecto.
-- Variable `SONAR_ORGANIZATION`: clave de la organización; es obligatoria en
-  SonarQube Cloud y opcional en un servidor propio.
-- Variable opcional `SONAR_HOST_URL`: URL del servidor. Si no existe, se usa
-  `https://sonarcloud.io`.
+- Secrets `SONAR_TOKEN` y `SONAR_PROJECT_KEY`: token de análisis y clave exacta
+  del proyecto. El workflow también admite `SONAR_PROJECT_KEY` como variable.
+- `SONAR_ORGANIZATION`: clave de la organización; es obligatoria en SonarQube
+  Cloud y opcional en un servidor propio. Puede ser secret o variable.
+- `SONAR_HOST_URL`: URL opcional del servidor, como secret o variable. Si no
+  existe, se usa `https://sonarcloud.io`.
 
 Si el proyecto de SonarQube Cloud ya usa análisis automático, desactívalo en
 `Administration > Analysis Method` antes de habilitar este workflow. SonarQube
