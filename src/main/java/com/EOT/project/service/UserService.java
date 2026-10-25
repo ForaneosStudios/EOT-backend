@@ -1,6 +1,7 @@
 package com.EOT.project.service;
 
 import com.EOT.project.dto.request.UserRequestDTO;
+import com.EOT.project.dto.request.UserLoginRequestDTO;
 import com.EOT.project.dto.response.UserResponseDTO;
 import com.EOT.project.exception.BadRequestException;
 import com.EOT.project.exception.ResourceNotFoundException;
@@ -8,6 +9,9 @@ import com.EOT.project.model.UserModel;
 import com.EOT.project.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -18,6 +22,7 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<UserResponseDTO> findAll() {
@@ -47,11 +52,27 @@ public class UserService {
         UserModel user = UserModel.builder()
                 .username(dto.getUsername())
                 .email(dto.getEmail())
-                .password(dto.getPassword())
+                .password(passwordEncoder.encode(dto.getPassword()))
                 .profilePicture(dto.getProfilePicture())
                 .build();
 
         return UserResponseDTO.fromModel(userRepository.save(user));
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponseDTO login(UserLoginRequestDTO dto) {
+        UserModel user = userRepository.findByEmailAndIsDeletedFalse(dto.email())
+                .orElseThrow(this::invalidCredentials);
+
+        if (!passwordEncoder.matches(dto.password(), user.getPassword())) {
+            throw invalidCredentials();
+        }
+
+        return UserResponseDTO.fromModel(user);
+    }
+
+    private ResponseStatusException invalidCredentials() {
+        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Correo o contraseña incorrectos");
     }
 
     @Transactional
@@ -62,4 +83,3 @@ public class UserService {
         userRepository.save(user);
     }
 }
-

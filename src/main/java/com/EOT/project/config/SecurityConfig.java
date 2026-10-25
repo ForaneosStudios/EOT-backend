@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -12,20 +14,24 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http){
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Solución: Dejar CSRF habilitado globalmente, pero ignorarlo SOLO para la consola H2
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")
-            )
-            // Permitir frames solo del mismo origen para mayor seguridad en la consola H2
+            // 1. Deshabilitar CSRF globalmente para permitir peticiones POST, PUT, DELETE a la API
+            .csrf(csrf -> csrf.disable()) 
+            
+            // 2. Mantener la configuración de headers por si la necesitas
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
             )
-            // Configuración de rutas
+            
+            // 3. Permitir el tráfico a todos los endpoints temporalmente
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**").permitAll()
-                .anyRequest().permitAll() // Nota: En producción deberías restringir esto
+                .anyRequest().permitAll() 
             );
             
         return http.build();

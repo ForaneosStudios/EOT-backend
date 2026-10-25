@@ -26,6 +26,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+ 
 public class AchievementModel extends AuditableModel {
 
     @Id
