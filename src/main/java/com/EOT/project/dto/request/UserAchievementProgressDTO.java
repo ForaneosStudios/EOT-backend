@@ -1,6 +1,7 @@
 package com.EOT.project.dto.request;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +24,7 @@ public class UserAchievementProgressDTO {
 
     @NotNull(message = "El progreso no puede ser nulo")
     @Min(value = 0, message = "El progreso no puede ser menor a 0")
+    @Max(value = 100, message = "El progreso no puede ser mayor a 100")
     private Integer progress;
 
     private Boolean isUnlocked;

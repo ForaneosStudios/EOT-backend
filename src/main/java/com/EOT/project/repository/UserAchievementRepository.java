@@ -11,7 +11,7 @@ import java.util.UUID;
 @Repository
 public interface UserAchievementRepository extends JpaRepository<UserAchievementModel, UserAchievementModelId> {
 
-    List<UserAchievementModel> findById_UserId(UUID userId);
+    List<UserAchievementModel> findById_UserIdAndIsDeletedFalse(UUID userId);
 
     List<UserAchievementModel> findById_UserIdAndIsUnlockedTrue(UUID userId);
 }
