@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${EOT_DB_PASSWORD:-eot_dev_password}
     ports:
       # 5432 ya está ocupado por otro PostgreSQL local en este equipo.
-      - "${EOT_DB_PORT:-5433}:5432"
+      - "127.0.0.1:${EOT_DB_PORT:-5433}:5432"
     volumes:
       - eot_postgres_data:/var/lib/postgresql/data
       - ./src/main/resources/db/supabase/schema-supabase.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro

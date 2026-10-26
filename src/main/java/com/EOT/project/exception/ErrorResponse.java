@@ -16,8 +16,11 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
     private int status;
+    private String code;
     private String message;
     private Instant timestamp;
+    private String path;
+    private String requestId;
     private List<String> errors;
 }
 

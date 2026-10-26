@@ -1,0 +1,3 @@
+40018	FAIL	(SQL Injection)
+90019	FAIL	(Server Side Code Injection)
+90020	FAIL	(Remote OS Command Injection)
