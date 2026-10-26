@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: eot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${EOT_DB_NAME:-eot}
+      POSTGRES_USER: ${EOT_DB_USER:-eot}
+      POSTGRES_PASSWORD: ${EOT_DB_PASSWORD:-eot_dev_password}
+    ports:
+      # 5432 ya está ocupado por otro PostgreSQL local en este equipo.
+      - "127.0.0.1:${EOT_DB_PORT:-5433}:5432"
+    volumes:
+      - eot_postgres_data:/var/lib/postgresql/data
+      - ./src/main/resources/db/supabase/schema-supabase.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  eot_postgres_data:

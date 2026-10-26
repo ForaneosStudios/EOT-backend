@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Credenciales locales de Docker/Spring
+.env
+.env.supabase.local
