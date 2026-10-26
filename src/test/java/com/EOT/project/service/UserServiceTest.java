@@ -3,6 +3,7 @@ package com.EOT.project.service;
 import com.EOT.project.dto.request.CreateProfileRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
 import com.EOT.project.exception.BadRequestException;
+import com.EOT.project.exception.ConflictException;
 import com.EOT.project.exception.ResourceNotFoundException;
 import com.EOT.project.model.UserModel;
 import com.EOT.project.model.UserRole;
@@ -103,7 +104,7 @@ class UserServiceTest {
         when(userRepository.findByAuthUserIdAndIsDeletedFalse(authId))
                 .thenReturn(Optional.of(user("existing", "existing@example.com")));
 
-        BadRequestException exception = assertThrows(BadRequestException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> userService.createProfile(authId, "new@example.com", request));
 
         assertEquals("La cuenta ya tiene un perfil", exception.getMessage());
@@ -117,7 +118,7 @@ class UserServiceTest {
         when(userRepository.findByAuthUserIdAndIsDeletedFalse(authId)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername("taken")).thenReturn(true);
 
-        BadRequestException exception = assertThrows(BadRequestException.class,
+        ConflictException exception = assertThrows(ConflictException.class,
                 () -> userService.createProfile(authId, "new@example.com", request));
 
         assertEquals("El nombre o correo ya esta registrado", exception.getMessage());
@@ -132,7 +133,7 @@ class UserServiceTest {
         when(userRepository.existsByUsername("new_user")).thenReturn(false);
         when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
 
-        assertThrows(BadRequestException.class,
+        assertThrows(ConflictException.class,
                 () -> userService.createProfile(authId, "taken@example.com", request));
         verify(userRepository, never()).save(any());
     }

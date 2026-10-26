@@ -12,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,6 +50,18 @@ public class AchievementController {
     @PostMapping
     public ResponseEntity<AchievementResponseDTO> createAchievement(@Valid @RequestBody AchievementRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(achievementService.create(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<AchievementResponseDTO> updateAchievement(@PathVariable UUID id,
+                                                                     @Valid @RequestBody AchievementRequestDTO dto) {
+        return ResponseEntity.ok(achievementService.update(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAchievement(@PathVariable UUID id) {
+        achievementService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     private void requireAdmin(Authentication authentication) {

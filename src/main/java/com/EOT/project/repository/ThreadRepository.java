@@ -15,5 +15,7 @@ public interface ThreadRepository extends JpaRepository<ThreadModel, UUID> {
     List<ThreadModel> findByUser_UserIdAndIsDeletedFalse(UUID userId);
 
     List<ThreadModel> findByIsDeletedFalseOrderByCreatedAtDesc();
+
+    boolean existsByCategory_CategoryIdAndIsDeletedFalse(UUID categoryId);
 }
 

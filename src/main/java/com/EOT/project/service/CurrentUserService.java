@@ -22,10 +22,13 @@ public class CurrentUserService {
 
     public void requireOwnerOrAdmin(Authentication authentication, UUID userId) {
         UserModel current = requireProfile(authentication);
-        boolean admin = authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
-        if (!admin && !current.getUserId().equals(userId)) {
+        if (!isAdmin(authentication) && !current.getUserId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para esta operacion");
         }
+    }
+
+    public boolean isAdmin(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
     }
 }

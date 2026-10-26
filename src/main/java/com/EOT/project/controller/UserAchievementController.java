@@ -26,6 +26,12 @@ public class UserAchievementController {
     private final UserAchievementService userAchievementService;
     private final CurrentUserService currentUserService;
 
+    @GetMapping("/me")
+    public ResponseEntity<List<UserAchievementResponseDTO>> getCurrentUserAchievements(Authentication authentication) {
+        UUID userId = currentUserService.requireProfile(authentication).getUserId();
+        return ResponseEntity.ok(userAchievementService.findByUserId(userId));
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<UserAchievementResponseDTO>> getUserAchievements(@PathVariable UUID userId, Authentication authentication) {
         currentUserService.requireOwnerOrAdmin(authentication, userId);
