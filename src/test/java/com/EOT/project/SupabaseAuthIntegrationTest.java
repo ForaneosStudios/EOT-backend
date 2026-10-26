@@ -2,6 +2,7 @@ package com.EOT.project;
 
 import com.EOT.project.model.UserModel;
 import com.EOT.project.model.UserRole;
+import com.EOT.project.repository.CategoryRepository;
 import com.EOT.project.repository.UserRepository;
 import java.time.Instant;
 import java.util.UUID;
@@ -31,17 +32,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SupabaseAuthIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired UserRepository users;
+    @Autowired CategoryRepository categories;
     @MockitoBean JwtDecoder decoder;
     private final UUID userAuthId = UUID.randomUUID();
     private final UUID adminAuthId = UUID.randomUUID();
     private final UUID newAuthId = UUID.randomUUID();
     private UserModel user;
+    private UserModel admin;
 
     @BeforeEach
     void setup() {
         user = users.saveAndFlush(UserModel.builder().authUserId(userAuthId).username("security_user")
                 .email("security-user@example.com").build());
-        users.saveAndFlush(UserModel.builder().authUserId(adminAuthId).username("security_admin")
+        admin = users.saveAndFlush(UserModel.builder().authUserId(adminAuthId).username("security_admin")
                 .email("security-admin@example.com").role(UserRole.ADMIN).build());
         when(decoder.decode("user-token")).thenReturn(jwt("user-token", userAuthId, "security-user@example.com"));
         when(decoder.decode("admin-token")).thenReturn(jwt("admin-token", adminAuthId, "security-admin@example.com"));
@@ -121,5 +124,86 @@ class SupabaseAuthIntegrationTest {
         users.saveAndFlush(user);
         mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer user-token"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void threadRoutesAcceptOwnersAndAdminsWhileEnforcingValidation() throws Exception {
+        UUID categoryId = categories.findByIsDeletedFalse().getFirst().getCategoryId();
+        String userThread = threadJson(categoryId, user.getUserId(), false, "Hilo del usuario");
+
+        mvc.perform(post("/api/v1/threads").header("Authorization", "Bearer user-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(userThread))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Hilo del usuario"))
+                .andExpect(jsonPath("$.userId").value(user.getUserId().toString()))
+                .andExpect(jsonPath("$.isLocked").value(false));
+
+        String lockedByUser = threadJson(categoryId, user.getUserId(), true, "Bloqueado por usuario");
+        mvc.perform(post("/api/v1/threads").header("Authorization", "Bearer user-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(lockedByUser))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Solo un administrador puede bloquear un hilo"));
+
+        String lockedByAdmin = threadJson(categoryId, admin.getUserId(), true, "Aviso administrativo");
+        mvc.perform(post("/api/v1/threads").header("Authorization", "Bearer admin-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(lockedByAdmin))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.isLocked").value(true));
+
+        String invalidThread = threadJson(categoryId, user.getUserId(), false, "");
+        mvc.perform(post("/api/v1/threads").header("Authorization", "Bearer user-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(invalidThread))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+        String missingCategory = threadJson(UUID.randomUUID(), user.getUserId(), false, "Sin categoria");
+        mvc.perform(post("/api/v1/threads").header("Authorization", "Bearer user-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(missingCategory))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void achievementRoutesSeparatePublicDataFromAdministrativeOperations() throws Exception {
+        mvc.perform(get("/api/v1/achievements"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].achId").exists());
+
+        String achievement = "{\"achName\":\"Prueba de integracion\","
+                + "\"achDescription\":\"Logro creado por una prueba real\",\"isAchHidden\":true}";
+        mvc.perform(post("/api/v1/achievements").header("Authorization", "Bearer user-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(achievement))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(post("/api/v1/achievements").header("Authorization", "Bearer admin-token")
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+        String response = mvc.perform(post("/api/v1/achievements")
+                        .header("Authorization", "Bearer admin-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(achievement))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.isAchHidden").value(true))
+                .andReturn().getResponse().getContentAsString();
+        String achievementId = com.jayway.jsonpath.JsonPath.read(response, "$.achId");
+
+        mvc.perform(get("/api/v1/achievements/" + achievementId))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/achievements/" + achievementId)
+                        .header("Authorization", "Bearer admin-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.achName").value("Prueba de integracion"));
+
+        mvc.perform(post("/api/v1/achievements").header("Authorization", "Bearer admin-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(achievement))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+    }
+
+    private String threadJson(UUID categoryId, UUID userId, boolean locked, String title) {
+        return "{\"categoryId\":\"" + categoryId + "\",\"userId\":\"" + userId
+                + "\",\"title\":\"" + title + "\",\"content\":\"Contenido valido\","
+                + "\"isLocked\":" + locked + "}";
     }
 }
