@@ -59,6 +59,25 @@ administrador. Los usuarios no pueden consultar la lista de correos de otros.
 La actualización de progreso todavía acepta datos enviados por el cliente y no
 constituye una verificación antifraude de logros.
 
+### Endpoints principales
+
+Las operaciones de escritura devuelven errores JSON uniformes con `status`,
+`code`, `message`, `path` y `requestId`. Los recursos eliminados lógicamente se
+tratan como inexistentes.
+
+| Recurso | Lectura | Escritura |
+| --- | --- | --- |
+| Categorías | `GET /api/v1/categories`, `GET /api/v1/categories/{id}` | `POST`, `PUT /{id}` y `DELETE /{id}` solo para `ADMIN` |
+| Logros | `GET /api/v1/achievements`, `GET /api/v1/achievements/{id}` | `POST`, `PUT /{id}` y `DELETE /{id}` solo para `ADMIN` |
+| Hilos | `GET /api/v1/threads`, `GET /api/v1/threads/{id}` | Crear con sesión; editar/eliminar como propietario o administrador; `PATCH /{id}/lock` solo para `ADMIN` |
+| Posts | `GET /api/v1/posts?threadId=...`, `GET /api/v1/posts/{id}` | Crear, editar o eliminar como propietario o administrador |
+| Logros del usuario | `GET /api/v1/user-achievements/me` | `PUT /api/v1/user-achievements/progress` con propiedad o administración |
+
+La lista personal de logros incluye también los logros sin progreso con valor
+`0`. Los logros ocultos conservan su ID pero no revelan nombre, descripción ni
+imagen hasta desbloquearse. Una respuesta a un post debe pertenecer al mismo
+hilo, y un hilo bloqueado no acepta posts nuevos ni ediciones de usuarios.
+
 Las tablas de Supabase mantienen RLS activado y sin políticas públicas. Se
 revocaron sus privilegios directos a `anon` y `authenticated`: los datos se
 acceden mediante Spring, no directamente desde el SDK de Supabase. Spring debe

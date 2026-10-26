@@ -46,6 +46,7 @@ class GlobalExceptionHandlerTest {
     void mapsApplicationAndInfrastructureExceptions() throws Exception {
         assertError(get("/test/not-found"), 404, "RESOURCE_NOT_FOUND");
         assertError(get("/test/bad-request"), 400, "BAD_REQUEST");
+        assertError(get("/test/conflict"), 409, "CONFLICT");
         assertError(get("/test/forbidden-status"), 403, "REQUEST_REJECTED");
         assertError(get("/test/unauthorized"), 401, "UNAUTHORIZED");
         assertError(get("/test/forbidden"), 403, "FORBIDDEN");
@@ -105,6 +106,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/bad-request")
         void badRequest() {
             throw new BadRequestException("Solicitud invalida");
+        }
+
+        @GetMapping("/conflict")
+        void conflict() {
+            throw new ConflictException("Recurso duplicado");
         }
 
         @GetMapping("/forbidden-status")
