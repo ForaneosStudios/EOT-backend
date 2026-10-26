@@ -52,7 +52,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, UserRepository users, JwtDecoder decoder) {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, UserRepository users, JwtDecoder decoder,
+                                            ApiSecurityErrorHandler securityErrorHandler) {
         http
             // API clients authenticate with an explicit Bearer token, never with
             // automatically attached browser cookies. Keep CSRF enabled by default
@@ -61,16 +62,25 @@ public class SecurityConfig {
             .cors(cors -> {})
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+            .exceptionHandling(errors -> errors
+                    .authenticationEntryPoint(securityErrorHandler)
+                    .accessDeniedHandler(securityErrorHandler))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**", "/api/v1/threads/**",
                         "/api/v1/posts/**", "/api/v1/achievements/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/threads/*/lock").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/v1/users/me/profile").authenticated()
                 .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
-            .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder).jwtAuthenticationConverter(token -> {
+            .oauth2ResourceServer(oauth -> oauth
+                    .authenticationEntryPoint(securityErrorHandler)
+                    .accessDeniedHandler(securityErrorHandler)
+                    .jwt(jwt -> jwt.decoder(decoder).jwtAuthenticationConverter(token -> {
                 UUID authId;
                 try {
                     authId = UUID.fromString(token.getSubject());
@@ -98,7 +108,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.stream(origins.split(",")).map(String::trim)
                 .filter(origin -> !origin.isEmpty()).toList());
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

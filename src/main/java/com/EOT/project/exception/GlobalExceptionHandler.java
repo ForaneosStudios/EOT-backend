@@ -48,6 +48,12 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), request, null);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex,
+                                                         HttpServletRequest request) {
+        return response(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), request, null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex,
                                                                  HttpServletRequest request) {
