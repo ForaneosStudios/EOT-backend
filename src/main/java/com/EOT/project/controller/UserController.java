@@ -2,6 +2,9 @@ package com.EOT.project.controller;
 
 import com.EOT.project.dto.request.CreateProfileRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
+import com.EOT.project.dto.response.UsernameAvailabilityResponse;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import com.EOT.project.service.CurrentUserService;
 import com.EOT.project.service.UserService;
 import jakarta.validation.Valid;
@@ -12,11 +15,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Validated
 public class UserController {
     private final UserService userService;
     private final CurrentUserService currentUserService;
@@ -30,6 +35,12 @@ public class UserController {
     @GetMapping("/me")
     public UserResponseDTO currentUser(Authentication authentication) {
         return UserResponseDTO.fromModel(currentUserService.requireProfile(authentication));
+    }
+
+    @GetMapping("/availability")
+    public UsernameAvailabilityResponse usernameAvailability(
+            @RequestParam @Size(min = 4, max = 50) @Pattern(regexp = "[a-zA-Z0-9_]+") String username) {
+        return new UsernameAvailabilityResponse(userService.isUsernameAvailable(username));
     }
 
     @PostMapping("/me/profile")

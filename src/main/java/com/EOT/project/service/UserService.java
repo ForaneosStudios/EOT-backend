@@ -39,13 +39,18 @@ public class UserService {
         if (userRepository.findByAuthUserIdAndIsDeletedFalse(authId).isPresent()) {
             throw new ConflictException("La cuenta ya tiene un perfil");
         }
-        if (userRepository.existsByUsername(dto.username()) || userRepository.existsByEmail(email)) {
+        if (userRepository.existsByUsernameIgnoreCase(dto.username()) || userRepository.existsByEmail(email)) {
             // Existing profiles must be linked by an administrator, never by matching email alone.
             throw new ConflictException("El nombre o correo ya esta registrado");
         }
         UserModel user = UserModel.builder().authUserId(authId).username(dto.username())
                 .email(email).profilePicture(dto.profilePicture()).build();
         return UserResponseDTO.fromModel(userRepository.save(user));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isUsernameAvailable(String username) {
+        return !userRepository.existsByUsernameIgnoreCase(username);
     }
 
     @Transactional
