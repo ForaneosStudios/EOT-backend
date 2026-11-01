@@ -1,6 +1,7 @@
 package com.EOT.project.service;
 
 import com.EOT.project.dto.request.CreateProfileRequest;
+import com.EOT.project.dto.request.UpdateProfilePictureRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
 import com.EOT.project.exception.BadRequestException;
 import com.EOT.project.exception.ConflictException;
@@ -165,6 +166,21 @@ class UserServiceTest {
 
         assertFalse(userService.isUsernameAvailable("Hero"));
         assertTrue(userService.isUsernameAvailable("new_hero"));
+    }
+
+    @Test
+    void updatesOnlyTheSelectedCatalogAvatar() {
+        UUID userId = UUID.randomUUID();
+        UserModel existing = user("player", "player@example.com");
+        existing.setUserId(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existing));
+        when(userRepository.save(existing)).thenReturn(existing);
+
+        UserResponseDTO result = userService.updateProfilePicture(userId,
+                new UpdateProfilePictureRequest("/avatars/avatar-3.svg"));
+
+        assertEquals("/avatars/avatar-3.svg", result.getProfilePicture());
+        verify(userRepository).save(existing);
     }
 
     @Test

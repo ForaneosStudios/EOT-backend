@@ -1,6 +1,7 @@
 package com.EOT.project.controller;
 
 import com.EOT.project.dto.request.CreateProfileRequest;
+import com.EOT.project.dto.request.UpdateProfilePictureRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
 import com.EOT.project.dto.response.UsernameAvailabilityResponse;
 import jakarta.validation.constraints.Pattern;
@@ -49,6 +50,12 @@ public class UserController {
         Jwt token = (Jwt) authentication.getPrincipal();
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createProfile(
                 UUID.fromString(token.getSubject()), token.getClaimAsString("email"), dto));
+    }
+
+    @PatchMapping("/me/profile-picture")
+    public UserResponseDTO updateProfilePicture(Authentication authentication,
+                                                 @Valid @RequestBody UpdateProfilePictureRequest dto) {
+        return userService.updateProfilePicture(currentUserService.requireProfile(authentication).getUserId(), dto);
     }
 
     @DeleteMapping("/{id}")

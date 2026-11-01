@@ -92,6 +92,17 @@ class SupabaseAuthIntegrationTest {
     }
 
     @Test
+    void authenticatedPlayerCanSelectOnlyTheirCatalogAvatar() throws Exception {
+        mvc.perform(patch("/api/v1/users/me/profile-picture").header("Authorization", "Bearer user-token")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"profilePicture\":\"/avatars/avatar-2.svg\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.profilePicture").value("/avatars/avatar-2.svg"));
+
+        mvc.perform(patch("/api/v1/users/me/profile-picture").header("Authorization", "Bearer user-token")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"profilePicture\":\"https://example.com/avatar.png\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void cannotClaimExistingProfileJustByMatchingEmail() throws Exception {
         when(decoder.decode("other-token")).thenReturn(jwt("other-token", newAuthId, "security-user@example.com"));
         mvc.perform(post("/api/v1/users/me/profile").header("Authorization", "Bearer other-token")
