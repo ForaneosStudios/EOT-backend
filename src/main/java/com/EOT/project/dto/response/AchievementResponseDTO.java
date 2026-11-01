@@ -20,6 +20,8 @@ public class AchievementResponseDTO {
     private String achDescription;
     private String achPicture;
     private Boolean isAchHidden;
+    private Integer targetValue;
+    private String progressLabel;
     private Instant createdAt;
 
     public static AchievementResponseDTO fromModel(AchievementModel achievement) {
@@ -32,6 +34,8 @@ public class AchievementResponseDTO {
                 .achDescription(achievement.getAchDescription())
                 .achPicture(achievement.getAchPicture())
                 .isAchHidden(achievement.getIsAchHidden())
+                .targetValue(achievement.getTargetValue())
+                .progressLabel(achievement.getProgressLabel())
                 .createdAt(achievement.getCreatedAt())
                 .build();
     }

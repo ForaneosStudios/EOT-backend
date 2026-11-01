@@ -52,6 +52,8 @@ public class AchievementService {
                 .achDescription(dto.getAchDescription())
                 .achPicture(dto.getAchPicture())
                 .isAchHidden(dto.getIsAchHidden() != null ? dto.getIsAchHidden() : false)
+                .targetValue(dto.getTargetValue())
+                .progressLabel(dto.getProgressLabel())
                 .build();
 
         return AchievementResponseDTO.fromModel(achievementRepository.save(achievement));
@@ -69,6 +71,8 @@ public class AchievementService {
         achievement.setAchDescription(dto.getAchDescription());
         achievement.setAchPicture(dto.getAchPicture());
         achievement.setIsAchHidden(Boolean.TRUE.equals(dto.getIsAchHidden()));
+        achievement.setTargetValue(dto.getTargetValue());
+        achievement.setProgressLabel(dto.getProgressLabel());
         return AchievementResponseDTO.fromModel(achievementRepository.save(achievement));
     }
 
