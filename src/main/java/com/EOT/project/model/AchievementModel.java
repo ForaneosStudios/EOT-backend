@@ -47,6 +47,12 @@ public class AchievementModel extends AuditableModel {
     @Builder.Default
     private Boolean isAchHidden = false;
 
+    @Column(name = "target_value")
+    private Integer targetValue;
+
+    @Column(name = "progress_label", length = 50)
+    private String progressLabel;
+
     @OneToMany(mappedBy = "achievement", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default

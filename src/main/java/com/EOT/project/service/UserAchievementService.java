@@ -57,6 +57,10 @@ public class UserAchievementService {
         AchievementModel achievement = achievementRepository.findById(dto.getAchId())
                 .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Logro no encontrado con ID: " + dto.getAchId()));
+        int completionTarget = achievement.getTargetValue() != null ? achievement.getTargetValue() : 100;
+        if (dto.getProgress() > completionTarget) {
+            throw new BadRequestException("El progreso no puede superar la meta del logro");
+        }
 
         UserAchievementModel record = userAchievementRepository.findById(id).orElseGet(() -> {
             return UserAchievementModel.builder()
@@ -71,7 +75,7 @@ public class UserAchievementService {
         record.setIsDeleted(false);
         record.setDeletedAt(null);
         record.setProgress(dto.getProgress());
-        if (dto.getProgress() >= 100) {
+        if (dto.getProgress() >= completionTarget) {
             record.setIsUnlocked(true);
             if (record.getUnlockedAt() == null) {
                 record.setUnlockedAt(Instant.now());

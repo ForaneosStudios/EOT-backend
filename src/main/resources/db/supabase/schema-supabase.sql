@@ -96,6 +96,12 @@ CREATE TABLE IF NOT EXISTS achievements (
     ach_description VARCHAR(500) NOT NULL,
     ach_picture VARCHAR(255),
     is_ach_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    target_value INTEGER,
+    progress_label VARCHAR(50),
+    CONSTRAINT achievements_counter_metadata_check CHECK (
+        (target_value IS NULL AND progress_label IS NULL)
+        OR (target_value IS NOT NULL AND target_value > 0 AND progress_label IS NOT NULL)
+    ),
     
     -- Audit details
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,

@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS achievements (
     ach_description VARCHAR(500) NOT NULL,
     ach_picture VARCHAR(255),
     is_ach_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    target_value INT,
+    progress_label VARCHAR(50),
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
