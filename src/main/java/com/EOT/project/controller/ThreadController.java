@@ -24,6 +24,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import java.util.UUID;
 
 @RestController
@@ -40,6 +43,13 @@ public class ThreadController {
             return ResponseEntity.ok(threadService.findByCategoryId(categoryId));
         }
         return ResponseEntity.ok(threadService.findAll());
+    }
+
+    @GetMapping("/search")
+    public Page<ThreadResponseDTO> search(@RequestParam(required = false) String title, @RequestParam(required = false) String author,
+                                           @RequestParam(required = false) UUID participantId, @RequestParam(defaultValue = "0") int page,
+                                           @RequestParam(defaultValue = "10") int size) {
+        return threadService.search(title, author, participantId, PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 50), Sort.by(Sort.Direction.DESC, "createdAt")));
     }
 
     @GetMapping("/{id}")
@@ -71,8 +81,9 @@ public class ThreadController {
     }
 
     @PatchMapping("/{id}/lock")
-    public ResponseEntity<ThreadResponseDTO> setThreadLocked(@PathVariable UUID id,
+    public ResponseEntity<ThreadResponseDTO> setThreadLocked(@PathVariable UUID id, Authentication authentication,
                                                               @Valid @RequestBody ThreadLockRequestDTO dto) {
+        currentUserService.requireOwnerOrAdmin(authentication, threadService.findById(id).getUserId());
         return ResponseEntity.ok(threadService.setLocked(id, dto.locked()));
     }
 

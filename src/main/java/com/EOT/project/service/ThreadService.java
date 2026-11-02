@@ -11,6 +11,8 @@ import com.EOT.project.repository.CategoryRepository;
 import com.EOT.project.repository.ThreadRepository;
 import com.EOT.project.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,17 +23,20 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ThreadService {
-
     private final ThreadRepository threadRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<ThreadResponseDTO> findAll() {
-        return threadRepository.findByIsDeletedFalseOrderByCreatedAtDesc()
-                .stream()
-                .map(ThreadResponseDTO::fromModel)
-                .toList();
+        return threadRepository.findByIsDeletedFalseOrderByCreatedAtDesc().stream()
+                .map(ThreadResponseDTO::fromModel).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ThreadResponseDTO> search(String title, String author, UUID participantId, Pageable pageable) {
+        return threadRepository.search(blankToEmpty(title), blankToEmpty(author), participantId, pageable)
+                .map(ThreadResponseDTO::fromModel);
     }
 
     @Transactional(readOnly = true)
@@ -39,10 +44,8 @@ public class ThreadService {
         categoryRepository.findById(categoryId)
                 .filter(category -> !Boolean.TRUE.equals(category.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + categoryId));
-        return threadRepository.findByCategory_CategoryIdAndIsDeletedFalse(categoryId)
-                .stream()
-                .map(ThreadResponseDTO::fromModel)
-                .toList();
+        return threadRepository.findByCategory_CategoryIdAndIsDeletedFalse(categoryId).stream()
+                .map(ThreadResponseDTO::fromModel).toList();
     }
 
     @Transactional(readOnly = true)
@@ -52,22 +55,14 @@ public class ThreadService {
 
     @Transactional
     public ThreadResponseDTO create(ThreadRequestDTO dto) {
-        CategoryModel category = categoryRepository.findById(dto.getCategoryId())
+        CategoryModel category = dto.getCategoryId() == null ? communityCategory() : categoryRepository.findById(dto.getCategoryId())
                 .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + dto.getCategoryId()));
-
         UserModel user = userRepository.findById(dto.getUserId())
                 .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + dto.getUserId()));
-
-        ThreadModel thread = ThreadModel.builder()
-                .category(category)
-                .user(user)
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .isLocked(dto.getIsLocked() != null ? dto.getIsLocked() : false)
-                .build();
-
+        ThreadModel thread = ThreadModel.builder().category(category).user(user)
+                .title(dto.getTitle().trim()).content(dto.getContent().trim()).isLocked(false).build();
         return ThreadResponseDTO.fromModel(threadRepository.save(thread));
     }
 
@@ -94,10 +89,17 @@ public class ThreadService {
         threadRepository.save(thread);
     }
 
+    private CategoryModel communityCategory() {
+        return categoryRepository.findByCategoryName("Comunidad")
+                .filter(category -> !Boolean.TRUE.equals(category.getIsDeleted()))
+                .orElseGet(() -> categoryRepository.save(CategoryModel.builder()
+                        .categoryName("Comunidad").description("Conversaciones de la comunidad").build()));
+    }
+
     private ThreadModel requireActive(UUID id) {
-        return threadRepository.findById(id)
-                .filter(thread -> !Boolean.TRUE.equals(thread.getIsDeleted()))
+        return threadRepository.findById(id).filter(thread -> !Boolean.TRUE.equals(thread.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Hilo no encontrado con ID: " + id));
     }
-}
 
+    private String blankToEmpty(String value) { return value == null ? "" : value.trim(); }
+}
