@@ -15,6 +15,8 @@ import com.EOT.project.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.List;
@@ -37,6 +39,16 @@ public class PostService {
                 .stream()
                 .map(PostResponseDTO::fromModel)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PostResponseDTO> findPage(UUID threadId, UUID parentPostId, Pageable pageable) {
+        threadRepository.findById(threadId).filter(thread -> !Boolean.TRUE.equals(thread.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Hilo no encontrado con ID: " + threadId));
+        return (parentPostId == null
+                ? postRepository.findByThread_ThreadIdAndParentPostIsNullAndIsDeletedFalseOrderByCreatedAtAsc(threadId, pageable)
+                : postRepository.findByThread_ThreadIdAndParentPost_PostIdAndIsDeletedFalseOrderByCreatedAtAsc(threadId, parentPostId, pageable))
+                .map(PostResponseDTO::fromModel);
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +106,18 @@ public class PostService {
         post.setIsDeleted(true);
         post.setDeletedAt(Instant.now());
         postRepository.save(post);
+    }
+
+    @Transactional
+    public void delete(UUID id, UUID requesterId) {
+        PostModel post = requireActive(id);
+        if (Boolean.TRUE.equals(post.getThread().getIsLocked())) {
+            throw new ConflictException("El hilo se encuentra bloqueado, no se puede eliminar la publicación");
+        }
+        if (!post.getUser().getUserId().equals(requesterId) && !post.getThread().getUser().getUserId().equals(requesterId)) {
+            throw new BadRequestException("Solo el autor del mensaje o del hilo puede eliminar esta publicación");
+        }
+        post.setIsDeleted(true); post.setDeletedAt(Instant.now()); postRepository.save(post);
     }
 
     private PostModel requireActive(UUID id) {
