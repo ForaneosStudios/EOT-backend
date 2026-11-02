@@ -1,6 +1,7 @@
 package com.EOT.project.service;
 
 import com.EOT.project.dto.request.CreateProfileRequest;
+import com.EOT.project.dto.request.UpdateProfilePictureRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
 import com.EOT.project.exception.BadRequestException;
 import com.EOT.project.exception.ConflictException;
@@ -116,7 +117,7 @@ class UserServiceTest {
         UUID authId = UUID.randomUUID();
         CreateProfileRequest request = new CreateProfileRequest("taken", null);
         when(userRepository.findByAuthUserIdAndIsDeletedFalse(authId)).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("taken")).thenReturn(true);
+        when(userRepository.existsByUsernameIgnoreCase("taken")).thenReturn(true);
 
         ConflictException exception = assertThrows(ConflictException.class,
                 () -> userService.createProfile(authId, "new@example.com", request));
@@ -130,7 +131,7 @@ class UserServiceTest {
         UUID authId = UUID.randomUUID();
         CreateProfileRequest request = new CreateProfileRequest("new_user", null);
         when(userRepository.findByAuthUserIdAndIsDeletedFalse(authId)).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("new_user")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoreCase("new_user")).thenReturn(false);
         when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
 
         assertThrows(ConflictException.class,
@@ -143,7 +144,7 @@ class UserServiceTest {
         UUID authId = UUID.randomUUID();
         CreateProfileRequest request = new CreateProfileRequest("new_user", "avatar.png");
         when(userRepository.findByAuthUserIdAndIsDeletedFalse(authId)).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("new_user")).thenReturn(false);
+        when(userRepository.existsByUsernameIgnoreCase("new_user")).thenReturn(false);
         when(userRepository.existsByEmail("verified@example.com")).thenReturn(false);
         when(userRepository.save(any(UserModel.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -157,6 +158,29 @@ class UserServiceTest {
         assertEquals(UserRole.USER, result.getRole());
         assertEquals("avatar.png", result.getProfilePicture());
         assertNull(savedUser.getValue().getPassword());
+    }
+
+    @Test
+    void reportsUsernameAvailabilityIgnoringCase() {
+        when(userRepository.existsByUsernameIgnoreCase("Hero")).thenReturn(true);
+
+        assertFalse(userService.isUsernameAvailable("Hero"));
+        assertTrue(userService.isUsernameAvailable("new_hero"));
+    }
+
+    @Test
+    void updatesOnlyTheSelectedCatalogAvatar() {
+        UUID userId = UUID.randomUUID();
+        UserModel existing = user("player", "player@example.com");
+        existing.setUserId(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existing));
+        when(userRepository.save(existing)).thenReturn(existing);
+
+        UserResponseDTO result = userService.updateProfilePicture(userId,
+                new UpdateProfilePictureRequest("/avatars/avatar-3.svg"));
+
+        assertEquals("/avatars/avatar-3.svg", result.getProfilePicture());
+        verify(userRepository).save(existing);
     }
 
     @Test

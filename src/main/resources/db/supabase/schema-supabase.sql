@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+    reviewed_at TIMESTAMPTZ
 );
 
 -- ==============================================================================
@@ -87,6 +88,19 @@ CREATE TABLE IF NOT EXISTS posts (
     deleted_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS post_reports (
+    report_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
+    reporter_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    reason VARCHAR(500) NOT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'RESOLVED', 'DISMISSED')),
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_post_reports_thread ON post_reports(post_id, created_at DESC);
+
 -- ==============================================================================
 -- TABLA: achievements (Logros del sistema)
 -- ==============================================================================
@@ -96,6 +110,12 @@ CREATE TABLE IF NOT EXISTS achievements (
     ach_description VARCHAR(500) NOT NULL,
     ach_picture VARCHAR(255),
     is_ach_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    target_value INTEGER,
+    progress_label VARCHAR(50),
+    CONSTRAINT achievements_counter_metadata_check CHECK (
+        (target_value IS NULL AND progress_label IS NULL)
+        OR (target_value IS NOT NULL AND target_value > 0 AND progress_label IS NOT NULL)
+    ),
     
     -- Audit details
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,

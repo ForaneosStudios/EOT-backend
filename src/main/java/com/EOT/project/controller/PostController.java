@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -34,6 +36,12 @@ public class PostController {
     @GetMapping
     public ResponseEntity<List<PostResponseDTO>> getPostsByThread(@RequestParam UUID threadId) {
         return ResponseEntity.ok(postService.findByThreadId(threadId));
+    }
+
+    @GetMapping("/page")
+    public Page<PostResponseDTO> getPostPage(@RequestParam UUID threadId, @RequestParam(required = false) UUID parentPostId,
+                                              @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        return postService.findPage(threadId, parentPostId, PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 50)));
     }
 
     @GetMapping("/{id}")
@@ -59,8 +67,7 @@ public class PostController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable UUID id, Authentication authentication) {
         PostResponseDTO existing = postService.findById(id);
-        currentUserService.requireOwnerOrAdmin(authentication, existing.getUserId());
-        postService.delete(id);
+        postService.delete(id, currentUserService.requireProfile(authentication).getUserId());
         return ResponseEntity.noContent().build();
     }
 }

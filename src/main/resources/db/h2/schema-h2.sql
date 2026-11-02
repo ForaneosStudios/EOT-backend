@@ -56,12 +56,23 @@ CREATE TABLE IF NOT EXISTS posts (
     CONSTRAINT fk_posts_parent FOREIGN KEY (parent_post_id) REFERENCES posts(post_id)
 );
 
+CREATE TABLE IF NOT EXISTS post_reports (
+    report_id UUID PRIMARY KEY, post_id UUID NOT NULL, reporter_id UUID NOT NULL, reason VARCHAR(500) NOT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING', is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP WITH TIME ZONE,
+    deleted_at TIMESTAMP WITH TIME ZONE, reviewed_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_report_post FOREIGN KEY (post_id) REFERENCES posts(post_id),
+    CONSTRAINT fk_reporter FOREIGN KEY (reporter_id) REFERENCES users(user_id)
+);
+
 CREATE TABLE IF NOT EXISTS achievements (
     ach_id UUID PRIMARY KEY,
     ach_name VARCHAR(100) NOT NULL UNIQUE,
     ach_description VARCHAR(500) NOT NULL,
     ach_picture VARCHAR(255),
     is_ach_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    target_value INT,
+    progress_label VARCHAR(50),
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

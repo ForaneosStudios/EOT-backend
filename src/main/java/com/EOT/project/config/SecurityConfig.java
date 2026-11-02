@@ -69,12 +69,14 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**", "/api/v1/threads/**",
                         "/api/v1/posts/**", "/api/v1/achievements/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/availability").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/v1/threads/*/lock").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/threads/*/lock").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/v1/users/me/profile").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/users/me/profile-picture").authenticated()
                 .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth -> oauth
