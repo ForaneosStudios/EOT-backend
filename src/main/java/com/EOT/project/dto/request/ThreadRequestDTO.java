@@ -15,21 +15,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ThreadRequestDTO {
-
-    @NotNull(message = "El ID de la categoría es obligatorio")
     private UUID categoryId;
 
     @NotNull(message = "El ID del usuario es obligatorio")
     private UUID userId;
 
     @NotBlank(message = "El título del hilo es obligatorio")
-    @Size(min = 3, max = 200, message = "El título debe tener entre 3 y 200 caracteres")
+    @Size(min = 5, max = 120, message = "El título debe tener entre 5 y 120 caracteres")
     private String title;
 
     @NotBlank(message = "El contenido no puede estar vacío")
-    @Size(min = 1, max = 500, message = "El contenido debe tener entre 3 y 500 caracteres")
+    @Size(min = 10, max = 2000, message = "El contenido debe tener entre 10 y 2000 caracteres")
     private String content;
 
     private Boolean isLocked;
 }
-

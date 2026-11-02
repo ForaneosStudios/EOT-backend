@@ -24,6 +24,8 @@ public class UserAchievementResponseDTO {
     private String achDescription;
     private String achPicture;
     private Boolean isAchHidden;
+    private Integer targetValue;
+    private String progressLabel;
     private Integer progress;
     private Boolean isUnlocked;
     private Instant unlockedAt;
@@ -47,6 +49,8 @@ public class UserAchievementResponseDTO {
                 .achPicture(hiddenAndLocked ? null
                         : ua.getAchievement() != null ? ua.getAchievement().getAchPicture() : null)
                 .isAchHidden(ua.getAchievement() != null ? ua.getAchievement().getIsAchHidden() : null)
+                .targetValue(hiddenAndLocked || ua.getAchievement() == null ? null : ua.getAchievement().getTargetValue())
+                .progressLabel(hiddenAndLocked || ua.getAchievement() == null ? null : ua.getAchievement().getProgressLabel())
                 .progress(ua.getProgress())
                 .isUnlocked(ua.getIsUnlocked())
                 .unlockedAt(ua.getUnlockedAt())
@@ -64,6 +68,8 @@ public class UserAchievementResponseDTO {
                 .achDescription(hidden ? null : achievement.getAchDescription())
                 .achPicture(hidden ? null : achievement.getAchPicture())
                 .isAchHidden(achievement.getIsAchHidden())
+                .targetValue(hidden ? null : achievement.getTargetValue())
+                .progressLabel(hidden ? null : achievement.getProgressLabel())
                 .progress(0)
                 .isUnlocked(false)
                 .build();

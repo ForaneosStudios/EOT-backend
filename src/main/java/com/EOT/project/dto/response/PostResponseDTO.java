@@ -24,6 +24,7 @@ public class PostResponseDTO {
     private String content;
     private Instant createdAt;
     private Instant updatedAt;
+    private Boolean isEdited;
 
     public static PostResponseDTO fromModel(PostModel post) {
         if (post == null) {
@@ -39,6 +40,7 @@ public class PostResponseDTO {
                 .content(post.getContent())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
+                .isEdited(post.getUpdatedAt() != null)
                 .build();
     }
 }
