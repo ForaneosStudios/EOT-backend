@@ -60,7 +60,7 @@ public class ThreadController {
     @PostMapping
     public ResponseEntity<ThreadResponseDTO> createThread(@Valid @RequestBody ThreadRequestDTO dto, Authentication authentication) {
         currentUserService.requireOwnerOrAdmin(authentication, dto.getUserId());
-        if (Boolean.TRUE.equals(dto.getIsLocked()) && !currentUserService.isAdmin(authentication)) {
+        if (Boolean.TRUE.equals(dto.getIsLocked()) && authentication.getAuthorities().stream()\n                .noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo un administrador puede bloquear un hilo");
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(threadService.create(dto));
