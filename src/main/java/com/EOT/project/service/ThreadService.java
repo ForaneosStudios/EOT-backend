@@ -62,7 +62,8 @@ public class ThreadService {
                 .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + dto.getUserId()));
         ThreadModel thread = ThreadModel.builder().category(category).user(user)
-                .title(dto.getTitle().trim()).content(dto.getContent().trim()).isLocked(false).build();
+                .title(dto.getTitle().trim()).content(dto.getContent().trim())
+                .isLocked(Boolean.TRUE.equals(dto.getIsLocked())).build();
         return ThreadResponseDTO.fromModel(threadRepository.save(thread));
     }
 
