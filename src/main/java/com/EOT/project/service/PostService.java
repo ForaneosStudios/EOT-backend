@@ -111,13 +111,12 @@ public class PostService {
     @Transactional
     public void delete(UUID id, UUID requesterId) {
         PostModel post = requireActive(id);
-        if (Boolean.TRUE.equals(post.getThread().getIsLocked())) {
-            throw new ConflictException("El hilo se encuentra bloqueado, no se puede eliminar la publicación");
-        }
         if (!post.getUser().getUserId().equals(requesterId) && !post.getThread().getUser().getUserId().equals(requesterId)) {
             throw new BadRequestException("Solo el autor del mensaje o del hilo puede eliminar esta publicación");
         }
-        post.setIsDeleted(true); post.setDeletedAt(Instant.now()); postRepository.save(post);
+        post.setIsDeleted(true);
+        post.setDeletedAt(Instant.now());
+        postRepository.save(post);
     }
 
     private PostModel requireActive(UUID id) {
@@ -127,4 +126,3 @@ public class PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("Post no encontrado con ID: " + id));
     }
 }
-

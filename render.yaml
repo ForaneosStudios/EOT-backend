@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: eot-backend
+    runtime: docker
+    plan: free
+    branch: main
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: SUPABASE_DB_USER
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: SUPABASE_AUTH_ISSUER
+        sync: false
+      - key: APP_CORS_ALLOWED_ORIGINS
+        sync: false

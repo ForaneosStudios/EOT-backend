@@ -83,7 +83,9 @@ public class ThreadController {
     @PatchMapping("/{id}/lock")
     public ResponseEntity<ThreadResponseDTO> setThreadLocked(@PathVariable UUID id, Authentication authentication,
                                                               @Valid @RequestBody ThreadLockRequestDTO dto) {
-        currentUserService.requireOwnerOrAdmin(authentication, threadService.findById(id).getUserId());
+        if (!currentUserService.isAdmin(authentication)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo un administrador puede bloquear un hilo");
+        }
         return ResponseEntity.ok(threadService.setLocked(id, dto.locked()));
     }
 
@@ -95,4 +97,3 @@ public class ThreadController {
         return ResponseEntity.noContent().build();
     }
 }
-
