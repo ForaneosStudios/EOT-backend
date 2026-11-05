@@ -8,7 +8,6 @@ services:
       POSTGRES_USER: ${EOT_DB_USER:-eot}
       POSTGRES_PASSWORD: ${EOT_DB_PASSWORD:-eot_dev_password}
     ports:
-      # 5432 ya está ocupado por otro PostgreSQL local en este equipo.
       - "127.0.0.1:${EOT_DB_PORT:-5433}:5432"
     volumes:
       - eot_postgres_data:/var/lib/postgresql/data
