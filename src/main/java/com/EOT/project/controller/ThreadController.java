@@ -83,7 +83,6 @@ public class ThreadController {
     @PatchMapping("/{id}/lock")
     public ResponseEntity<ThreadResponseDTO> setThreadLocked(@PathVariable UUID id, Authentication authentication,
                                                               @Valid @RequestBody ThreadLockRequestDTO dto) {
-        currentUserService.requireOwnerOrAdmin(authentication, threadService.findById(id).getUserId());
         return ResponseEntity.ok(threadService.setLocked(id, dto.locked()));
     }
 

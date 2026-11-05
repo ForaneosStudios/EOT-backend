@@ -111,9 +111,6 @@ public class PostService {
     @Transactional
     public void delete(UUID id, UUID requesterId) {
         PostModel post = requireActive(id);
-        if (Boolean.TRUE.equals(post.getThread().getIsLocked())) {
-            throw new ConflictException("El hilo se encuentra bloqueado, no se puede eliminar la publicación");
-        }
         if (!post.getUser().getUserId().equals(requesterId) && !post.getThread().getUser().getUserId().equals(requesterId)) {
             throw new BadRequestException("Solo el autor del mensaje o del hilo puede eliminar esta publicación");
         }

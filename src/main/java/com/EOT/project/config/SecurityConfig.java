@@ -73,7 +73,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/v1/threads/*/lock").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/threads/*/lock").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/v1/users/me/profile").authenticated()
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/users/me/profile-picture").authenticated()
