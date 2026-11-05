@@ -66,6 +66,8 @@ public class SecurityConfig {
                     .authenticationEntryPoint(securityErrorHandler)
                     .accessDeniedHandler(securityErrorHandler))
             .authorizeHttpRequests(auth -> auth
+                // Public liveness/readiness endpoint. It reveals only UP/DOWN.
+                .requestMatchers("/actuator/health/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**", "/api/v1/threads/**",
                         "/api/v1/posts/**", "/api/v1/achievements/**").permitAll()

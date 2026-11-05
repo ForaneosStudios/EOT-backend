@@ -94,4 +94,3 @@ public class ThreadController {
         return ResponseEntity.noContent().build();
     }
 }
-
