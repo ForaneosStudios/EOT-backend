@@ -80,6 +80,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Tests unitarios: JUnit 5, Mockito y AssertJ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Tests JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
