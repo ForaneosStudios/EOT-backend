@@ -21,10 +21,24 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SecurityConfigTest {
+    @Test
+    void allowsCorsRequestsFromAnyOrigin() {
+        UrlBasedCorsConfigurationSource source = (UrlBasedCorsConfigurationSource) new SecurityConfig()
+                .corsConfigurationSource();
+        CorsConfiguration config = source.getCorsConfiguration(new org.springframework.mock.web.MockHttpServletRequest());
+
+        assertNotNull(config);
+        assertEquals(List.of("*"), config.getAllowedOriginPatterns());
+        assertEquals(List.of("*"), config.getAllowedHeaders());
+        assertFalse(config.getAllowCredentials());
+    }
+
     @Test
     void checksSignatureIssuerAudienceAndExpiration() throws Exception {
         RSAKey signingKey = new RSAKeyGenerator(2048).keyID("test-key").generate();

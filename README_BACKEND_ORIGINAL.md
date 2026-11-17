@@ -83,10 +83,10 @@ revocaron sus privilegios directos a `anon` y `authenticated`: los datos se
 acceden mediante Spring, no directamente desde el SDK de Supabase. Spring debe
 usar un usuario de base con permisos adecuados y aplicar su propia autorización.
 
-Para un cliente de otro origen, define `APP_CORS_ALLOWED_ORIGINS` como una lista
-de orígenes explícitos separados por comas. Se usa Bearer, no cookies, y no se
-habilitan credenciales CORS. Configura HTTPS en producción. Antes de publicar,
-configura confirmación de correo, URLs de redirección y SMTP en Supabase Auth.
+El backend acepta solicitudes CORS desde cualquier origen. Se usa Bearer, no
+cookies, y no se habilitan credenciales CORS. Configura HTTPS en producción.
+Antes de publicar, configura confirmación de correo, URLs de redirección y SMTP
+en Supabase Auth.
 CSRF permanece habilitado por defecto y se omite solo para `/api/**`, cuyos
 clientes envían el Bearer token explícitamente, y para la consola H2 local. Si en
 el futuro alguna ruta de API autentica mediante cookies, debe retirarse de esa

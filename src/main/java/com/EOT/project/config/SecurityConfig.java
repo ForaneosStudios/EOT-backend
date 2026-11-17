@@ -2,7 +2,6 @@ package com.EOT.project.config;
 
 import com.EOT.project.repository.UserRepository;
 import java.util.List;
-import java.util.Arrays;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -108,12 +107,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource(@Value("${APP_CORS_ALLOWED_ORIGINS:}") String origins) {
+    CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.stream(origins.split(",")).map(String::trim)
-                .filter(origin -> !origin.isEmpty()).toList());
+        // API authentication uses explicitly supplied Bearer tokens rather than
+        // cookies, so any browser origin may call the backend at the CORS layer.
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
