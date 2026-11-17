@@ -72,6 +72,7 @@ tratan como inexistentes.
 | Hilos | `GET /api/v1/threads`, `GET /api/v1/threads/{id}` | Crear con sesión; editar/eliminar como propietario o administrador; `PATCH /{id}/lock` solo para `ADMIN` |
 | Posts | `GET /api/v1/posts?threadId=...`, `GET /api/v1/posts/{id}` | Crear, editar o eliminar como propietario o administrador |
 | Logros del usuario | `GET /api/v1/user-achievements/me` | `PUT /api/v1/user-achievements/progress` con propiedad o administración |
+| Mejor tiempo | `GET /api/v1/time-records/me` | `POST /api/v1/time-records` o `PUT /api/v1/time-records/me`; el cuerpo usa `{"timeMs": 92345}`. Solo se guarda el menor tiempo del jugador. |
 
 La lista personal de logros incluye también los logros sin progreso con valor
 `0`. Los logros ocultos conservan su ID pero no revelan nombre, descripción ni

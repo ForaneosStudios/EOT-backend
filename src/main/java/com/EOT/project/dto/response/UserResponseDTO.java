@@ -21,6 +21,7 @@ public class UserResponseDTO {
     private String email;
     private UserRole role;
     private String profilePicture;
+    private Long bestTimeMs;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -34,6 +35,7 @@ public class UserResponseDTO {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .profilePicture(user.getProfilePicture())
+                .bestTimeMs(user.getBestTimeMs())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
