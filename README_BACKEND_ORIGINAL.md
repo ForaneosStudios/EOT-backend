@@ -72,6 +72,7 @@ tratan como inexistentes.
 | Hilos | `GET /api/v1/threads`, `GET /api/v1/threads/{id}` | Crear con sesión; editar/eliminar como propietario o administrador; `PATCH /{id}/lock` solo para `ADMIN` |
 | Posts | `GET /api/v1/posts?threadId=...`, `GET /api/v1/posts/{id}` | Crear, editar o eliminar como propietario o administrador |
 | Logros del usuario | `GET /api/v1/user-achievements/me` | `PUT /api/v1/user-achievements/progress` con propiedad o administración |
+| Mejor tiempo | `GET /api/v1/time-records/me` | `POST /api/v1/time-records` o `PUT /api/v1/time-records/me`; el cuerpo usa `{"timeMs": 92345}`. Solo se guarda el menor tiempo del jugador. |
 
 La lista personal de logros incluye también los logros sin progreso con valor
 `0`. Los logros ocultos conservan su ID pero no revelan nombre, descripción ni
@@ -83,10 +84,10 @@ revocaron sus privilegios directos a `anon` y `authenticated`: los datos se
 acceden mediante Spring, no directamente desde el SDK de Supabase. Spring debe
 usar un usuario de base con permisos adecuados y aplicar su propia autorización.
 
-Para un cliente de otro origen, define `APP_CORS_ALLOWED_ORIGINS` como una lista
-de orígenes explícitos separados por comas. Se usa Bearer, no cookies, y no se
-habilitan credenciales CORS. Configura HTTPS en producción. Antes de publicar,
-configura confirmación de correo, URLs de redirección y SMTP en Supabase Auth.
+El backend acepta solicitudes CORS desde cualquier origen. Se usa Bearer, no
+cookies, y no se habilitan credenciales CORS. Configura HTTPS en producción.
+Antes de publicar, configura confirmación de correo, URLs de redirección y SMTP
+en Supabase Auth.
 CSRF permanece habilitado por defecto y se omite solo para `/api/**`, cuyos
 clientes envían el Bearer token explícitamente, y para la consola H2 local. Si en
 el futuro alguna ruta de API autentica mediante cookies, debe retirarse de esa

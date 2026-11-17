@@ -35,3 +35,8 @@ build/
 # Credenciales locales de Docker/Spring
 .env
 .env.supabase.local
+practica_documento.html
+build_practica_docx.py
+build_practica_word.ps1
+~$actica_documento.html
+docs/Practica_Pruebas_Unitarias_Spring_Boot.doc

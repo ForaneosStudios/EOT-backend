@@ -61,6 +61,9 @@ public class UserModel extends AuditableModel {
     @Column(name = "profile_picture", length = 255)
     private String profilePicture;
 
+    @Column(name = "best_time_ms")
+    private Long bestTimeMs;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default
