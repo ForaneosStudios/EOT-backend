@@ -57,6 +57,34 @@ CREATE TABLE IF NOT EXISTS posts (
     CONSTRAINT fk_posts_parent FOREIGN KEY (parent_post_id) REFERENCES posts(post_id)
 );
 
+CREATE TABLE IF NOT EXISTS private_conversations (
+    conversation_id UUID PRIMARY KEY,
+    participant_one_id UUID NOT NULL,
+    participant_two_id UUID NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT ck_private_conversation_distinct CHECK (participant_one_id <> participant_two_id),
+    CONSTRAINT uq_private_conversation_participants UNIQUE (participant_one_id, participant_two_id),
+    CONSTRAINT fk_private_conversation_one FOREIGN KEY (participant_one_id) REFERENCES users(user_id),
+    CONSTRAINT fk_private_conversation_two FOREIGN KEY (participant_two_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS private_messages (
+    message_id UUID PRIMARY KEY,
+    conversation_id UUID NOT NULL,
+    sender_id UUID NOT NULL,
+    content VARCHAR(2000) NOT NULL,
+    read_at TIMESTAMP WITH TIME ZONE,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_private_message_conversation FOREIGN KEY (conversation_id) REFERENCES private_conversations(conversation_id),
+    CONSTRAINT fk_private_message_sender FOREIGN KEY (sender_id) REFERENCES users(user_id)
+);
+
 CREATE TABLE IF NOT EXISTS post_reports (
     report_id UUID PRIMARY KEY, post_id UUID NOT NULL, reporter_id UUID NOT NULL, reason VARCHAR(500) NOT NULL,
     status VARCHAR(12) NOT NULL DEFAULT 'PENDING', is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
