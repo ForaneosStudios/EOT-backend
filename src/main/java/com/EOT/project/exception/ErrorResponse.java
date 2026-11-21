@@ -22,5 +22,7 @@ public class ErrorResponse {
     private String path;
     private String requestId;
     private List<String> errors;
+    /** Current state of the resource, only sent with STALE_WRITE. */
+    private Object current;
 }
 

@@ -2,6 +2,9 @@ package com.EOT.project.repository;
 
 import com.EOT.project.model.ThreadModel;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import java.util.Optional;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -31,5 +34,9 @@ public interface ThreadRepository extends JpaRepository<ThreadModel, UUID> {
       """)
     Page<ThreadModel> search(@Param("title") String title, @Param("author") String author,
                              @Param("participantId") UUID participantId, Pageable pageable);
-}
 
+    /** Loads the row with a write lock so concurrent edits are applied one after another. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from ThreadModel e where e.threadId = :id")
+    Optional<ThreadModel> findByIdForUpdate(@Param("id") UUID id);
+}

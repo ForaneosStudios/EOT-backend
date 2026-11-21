@@ -54,6 +54,20 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), request, null);
     }
 
+    @ExceptionHandler(StaleWriteException.class)
+    public ResponseEntity<ErrorResponse> handleStaleWrite(StaleWriteException ex, HttpServletRequest request) {
+        ErrorResponse error = ErrorResponse.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .code("STALE_WRITE")
+                .message(ex.getMessage())
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .requestId(UUID.randomUUID().toString())
+                .current(ex.getCurrent())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex,
                                                                  HttpServletRequest request) {

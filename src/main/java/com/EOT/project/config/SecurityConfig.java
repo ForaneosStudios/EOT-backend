@@ -1,5 +1,7 @@
 package com.EOT.project.config;
 
+import com.EOT.project.idempotency.IdempotencyFilter;
+import com.EOT.project.idempotency.IdempotencyService;
 import com.EOT.project.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
@@ -24,9 +26,12 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class SecurityConfig {
@@ -52,8 +57,13 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, UserRepository users, JwtDecoder decoder,
-                                            ApiSecurityErrorHandler securityErrorHandler) {
+                                            ApiSecurityErrorHandler securityErrorHandler,
+                                            IdempotencyService idempotencyService, ObjectMapper objectMapper,
+                                            PlatformTransactionManager transactionManager) {
         http
+            // Opt-in: only requests that send Idempotency-Key are affected. Runs after
+            // authorization so keys are scoped per user and rejected requests never use one.
+            .addFilterAfter(new IdempotencyFilter(idempotencyService, objectMapper, transactionManager), AuthorizationFilter.class)
             // API clients authenticate with an explicit Bearer token, never with
             // automatically attached browser cookies. Keep CSRF enabled by default
             // and ignore only the stateless API and the local H2 console.
@@ -114,6 +124,9 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        // Lets browser clients read the idempotency replay marker and retry hints.
+        // Date lets browser clients estimate their clock offset for X-Client-Intent-At.
+        config.setExposedHeaders(List.of(IdempotencyFilter.REPLAYED_HEADER, "Retry-After", "Location", "Date"));
         config.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

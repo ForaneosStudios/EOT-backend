@@ -1,5 +1,7 @@
 package com.EOT.project.controller;
 
+import com.EOT.project.concurrency.ClientIntent;
+import java.time.Instant;
 import com.EOT.project.dto.request.ThreadRequestDTO;
 import com.EOT.project.dto.request.ThreadLockRequestDTO;
 import com.EOT.project.dto.request.ThreadUpdateRequestDTO;
@@ -77,13 +79,17 @@ public class ThreadController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Un hilo bloqueado solo puede ser editado por un administrador");
         }
-        return ResponseEntity.ok(threadService.update(id, dto));
+        Instant intentAt = ClientIntent.current();
+        return ResponseEntity.ok(intentAt == null ? threadService.update(id, dto)
+                : threadService.updateIfNewer(id, dto, intentAt));
     }
 
     @PatchMapping("/{id}/lock")
     public ResponseEntity<ThreadResponseDTO> setThreadLocked(@PathVariable UUID id, Authentication authentication,
                                                               @Valid @RequestBody ThreadLockRequestDTO dto) {
-        return ResponseEntity.ok(threadService.setLocked(id, dto.locked()));
+        Instant intentAt = ClientIntent.current();
+        return ResponseEntity.ok(intentAt == null ? threadService.setLocked(id, dto.locked())
+                : threadService.setLockedIfNewer(id, dto.locked(), intentAt));
     }
 
     @DeleteMapping("/{id}")

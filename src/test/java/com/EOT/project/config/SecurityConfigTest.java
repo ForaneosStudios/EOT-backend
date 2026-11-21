@@ -37,6 +37,8 @@ class SecurityConfigTest {
         assertEquals(List.of("*"), config.getAllowedOriginPatterns());
         assertEquals(List.of("*"), config.getAllowedHeaders());
         assertFalse(config.getAllowCredentials());
+        assertTrue(config.getExposedHeaders().contains("Idempotency-Replayed"));
+        assertTrue(config.getExposedHeaders().contains("Retry-After"));
     }
 
     @Test
