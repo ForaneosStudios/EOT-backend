@@ -2,8 +2,10 @@ name: SAST - SonarQube
 
 on:
   workflow_dispatch:
+  # The SonarCloud plan only allows quality gates on the main branch; develop is fully
+  # analysed through its pull requests (into develop and from develop into main).
   push:
-    branches: [develop, main]
+    branches: [main]
   pull_request:
     branches: [develop, main]
 
