@@ -5,7 +5,9 @@ import com.EOT.project.dto.request.PostUpdateRequestDTO;
 import com.EOT.project.dto.response.PostResponseDTO;
 import com.EOT.project.exception.BadRequestException;
 import com.EOT.project.exception.ConflictException;
+import com.EOT.project.concurrency.ClientIntent;
 import com.EOT.project.exception.ResourceNotFoundException;
+import com.EOT.project.exception.StaleWriteException;
 import com.EOT.project.model.PostModel;
 import com.EOT.project.model.ThreadModel;
 import com.EOT.project.model.UserModel;
@@ -95,6 +97,25 @@ public class PostService {
         PostModel post = requireActive(id);
         if (Boolean.TRUE.equals(post.getThread().getIsLocked()) && !allowLockedThread) {
             throw new ConflictException("El hilo se encuentra bloqueado, no se puede editar la publicación");
+        }
+        post.setContent(dto.content());
+        return PostResponseDTO.fromModel(postRepository.save(post));
+    }
+
+    /** Like {@link #update} but rejects an edit made before the post's last saved change. */
+    @Transactional
+    public PostResponseDTO updateIfNewer(UUID id, PostUpdateRequestDTO dto, boolean allowLockedThread,
+                                         Instant intentAt) {
+        PostModel post = postRepository.findByIdForUpdate(id)
+                .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted())
+                        && !Boolean.TRUE.equals(existing.getThread().getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Post no encontrado con ID: " + id));
+        if (Boolean.TRUE.equals(post.getThread().getIsLocked()) && !allowLockedThread) {
+            throw new ConflictException("El hilo se encuentra bloqueado, no se puede editar la publicación");
+        }
+        if (ClientIntent.isStale(intentAt, post.getUpdatedAt(), post.getCreatedAt())) {
+            throw new StaleWriteException("Otra edicion mas reciente de este comentario ya se aplico",
+                    PostResponseDTO.fromModel(post));
         }
         post.setContent(dto.content());
         return PostResponseDTO.fromModel(postRepository.save(post));

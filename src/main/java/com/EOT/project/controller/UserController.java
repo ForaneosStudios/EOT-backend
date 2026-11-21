@@ -1,5 +1,7 @@
 package com.EOT.project.controller;
 
+import com.EOT.project.concurrency.ClientIntent;
+import java.time.Instant;
 import com.EOT.project.dto.request.CreateProfileRequest;
 import com.EOT.project.dto.request.UpdateProfilePictureRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
@@ -55,7 +57,10 @@ public class UserController {
     @PatchMapping("/me/profile-picture")
     public UserResponseDTO updateProfilePicture(Authentication authentication,
                                                  @Valid @RequestBody UpdateProfilePictureRequest dto) {
-        return userService.updateProfilePicture(currentUserService.requireProfile(authentication).getUserId(), dto);
+        UUID userId = currentUserService.requireProfile(authentication).getUserId();
+        Instant intentAt = ClientIntent.current();
+        return intentAt == null ? userService.updateProfilePicture(userId, dto)
+                : userService.updateProfilePictureIfNewer(userId, dto, intentAt);
     }
 
     @DeleteMapping("/{id}")

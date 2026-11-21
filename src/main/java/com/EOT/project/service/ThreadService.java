@@ -3,7 +3,9 @@ package com.EOT.project.service;
 import com.EOT.project.dto.request.ThreadRequestDTO;
 import com.EOT.project.dto.request.ThreadUpdateRequestDTO;
 import com.EOT.project.dto.response.ThreadResponseDTO;
+import com.EOT.project.concurrency.ClientIntent;
 import com.EOT.project.exception.ResourceNotFoundException;
+import com.EOT.project.exception.StaleWriteException;
 import com.EOT.project.model.CategoryModel;
 import com.EOT.project.model.ThreadModel;
 import com.EOT.project.model.UserModel;
@@ -75,6 +77,23 @@ public class ThreadService {
         return ThreadResponseDTO.fromModel(threadRepository.save(thread));
     }
 
+    /** Like {@link #update} but rejects an edit made before the thread's last saved change. */
+    @Transactional
+    public ThreadResponseDTO updateIfNewer(UUID id, ThreadUpdateRequestDTO dto, Instant intentAt) {
+        ThreadModel thread = requireActiveForUpdate(id, intentAt);
+        thread.setTitle(dto.title());
+        thread.setContent(dto.content());
+        return ThreadResponseDTO.fromModel(threadRepository.save(thread));
+    }
+
+    /** Like {@link #setLocked} but rejects a change made before the thread's last saved change. */
+    @Transactional
+    public ThreadResponseDTO setLockedIfNewer(UUID id, boolean locked, Instant intentAt) {
+        ThreadModel thread = requireActiveForUpdate(id, intentAt);
+        thread.setIsLocked(locked);
+        return ThreadResponseDTO.fromModel(threadRepository.save(thread));
+    }
+
     @Transactional
     public ThreadResponseDTO setLocked(UUID id, boolean locked) {
         ThreadModel thread = requireActive(id);
@@ -100,6 +119,17 @@ public class ThreadService {
     private ThreadModel requireActive(UUID id) {
         return threadRepository.findById(id).filter(thread -> !Boolean.TRUE.equals(thread.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Hilo no encontrado con ID: " + id));
+    }
+
+    private ThreadModel requireActiveForUpdate(UUID id, Instant intentAt) {
+        ThreadModel thread = threadRepository.findByIdForUpdate(id)
+                .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Hilo no encontrado con ID: " + id));
+        if (ClientIntent.isStale(intentAt, thread.getUpdatedAt(), thread.getCreatedAt())) {
+            throw new StaleWriteException("Otra edicion mas reciente de este hilo ya se aplico",
+                    ThreadResponseDTO.fromModel(thread));
+        }
+        return thread;
     }
 
     private String blankToEmpty(String value) { return value == null ? "" : value.trim(); }

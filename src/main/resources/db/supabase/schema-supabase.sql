@@ -201,3 +201,25 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 -- ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
 
+
+-- ==============================================================================
+-- IDEMPOTENCIA OPT-IN (ver supabase/migrations/20261121000100_add_idempotency_keys.sql)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    idempotency_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    auth_sub VARCHAR(64) NOT NULL,
+    idem_key VARCHAR(128) NOT NULL,
+    request_method VARCHAR(10) NOT NULL,
+    request_path VARCHAR(512) NOT NULL,
+    request_hash VARCHAR(64) NOT NULL,
+    status VARCHAR(12) NOT NULL CHECK (status IN ('IN_PROGRESS', 'COMPLETED')),
+    response_status INT,
+    response_body TEXT,
+    response_content_type VARCHAR(255),
+    location_header VARCHAR(1024),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    locked_until TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    CONSTRAINT uq_idempotency_keys_owner_key UNIQUE (auth_sub, idem_key)
+);
+CREATE INDEX IF NOT EXISTS idx_idempotency_keys_expires_at ON idempotency_keys(expires_at);

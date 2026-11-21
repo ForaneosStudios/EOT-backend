@@ -5,7 +5,9 @@ import com.EOT.project.dto.request.UpdateProfilePictureRequest;
 import com.EOT.project.dto.response.UserResponseDTO;
 import com.EOT.project.exception.BadRequestException;
 import com.EOT.project.exception.ConflictException;
+import com.EOT.project.concurrency.ClientIntent;
 import com.EOT.project.exception.ResourceNotFoundException;
+import com.EOT.project.exception.StaleWriteException;
 import com.EOT.project.model.UserModel;
 import com.EOT.project.repository.UserRepository;
 import java.util.List;
@@ -59,6 +61,21 @@ public class UserService {
         UserModel user = userRepository.findById(userId)
                 .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        user.setProfilePicture(dto.profilePicture());
+        return UserResponseDTO.fromModel(userRepository.save(user));
+    }
+
+    /** Like {@link #updateProfilePicture} but rejects a change made before the last saved one. */
+    @Transactional
+    public UserResponseDTO updateProfilePictureIfNewer(UUID userId, UpdateProfilePictureRequest dto,
+                                                       Instant intentAt) {
+        UserModel user = userRepository.findByIdForUpdate(userId)
+                .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        if (ClientIntent.isStale(intentAt, user.getUpdatedAt(), user.getCreatedAt())) {
+            throw new StaleWriteException("Otro cambio mas reciente de tu perfil ya se aplico",
+                    UserResponseDTO.fromModel(user));
+        }
         user.setProfilePicture(dto.profilePicture());
         return UserResponseDTO.fromModel(userRepository.save(user));
     }
