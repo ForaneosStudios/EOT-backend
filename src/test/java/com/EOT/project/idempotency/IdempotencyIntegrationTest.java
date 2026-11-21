@@ -112,12 +112,12 @@ class IdempotencyIntegrationTest {
         String key = UUID.randomUUID().toString();
         mvc.perform(createPost(userToken, user.getUserId(), "a-" + UUID.randomUUID())
                 .header(IdempotencyFilter.KEY_HEADER, key)).andExpect(status().isCreated());
-        String other = "b-" + UUID.randomUUID();
-        mvc.perform(createPost(userToken, user.getUserId(), other)
+        String otherContent = "b-" + UUID.randomUUID();
+        mvc.perform(createPost(userToken, user.getUserId(), otherContent)
                         .header(IdempotencyFilter.KEY_HEADER, key))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
-        assertEquals(0, postsWithContent(other));
+        assertEquals(0, postsWithContent(otherContent));
     }
 
     @Test

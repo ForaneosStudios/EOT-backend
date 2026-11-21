@@ -129,7 +129,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         }
 
         switch (decision.outcome()) {
-            case REPLAY -> replay(decision.record(), response);
+            case REPLAY -> replay(decision.entry(), response);
             case MISMATCH -> writeError(request, response, 422, "IDEMPOTENCY_KEY_REUSED",
                     "Esta Idempotency-Key ya se uso con una solicitud diferente");
             case IN_PROGRESS -> writeInProgress(request, response);
@@ -139,7 +139,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
 
     private void execute(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
                          IdempotencyService.Decision decision) throws ServletException, IOException {
-        UUID recordId = decision.record().getId();
+        UUID recordId = decision.entry().getId();
         Instant lease = decision.lease();
 
         TransactionStatus transaction;
@@ -169,13 +169,13 @@ public class IdempotencyFilter extends OncePerRequestFilter {
 
         int status = wrapper.getStatus();
         byte[] content = wrapper.getContentAsByteArray();
-        String storedBody = content.length == 0 ? null : new String(content, StandardCharsets.UTF_8);
-        String contentType = wrapper.getContentType();
-        String location = wrapper.getHeader(HttpHeaders.LOCATION);
+        IdempotencyService.StoredResponse stored = new IdempotencyService.StoredResponse(status,
+                content.length == 0 ? null : new String(content, StandardCharsets.UTF_8),
+                wrapper.getContentType(), wrapper.getHeader(HttpHeaders.LOCATION));
         boolean success = status >= 200 && status < 300;
 
         if (success && !transaction.isRollbackOnly() && content.length <= MAX_BODY_BYTES) {
-            commitWithResponse(request, wrapper, transaction, recordId, lease, status, storedBody, contentType, location);
+            commitWithResponse(request, wrapper, transaction, new Ownership(recordId, lease), stored);
         } else {
             rollbackQuietly(transaction);
             if (success) {
@@ -184,7 +184,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
                 safely(() -> service.release(recordId, lease));
                 replaceWithUnavailable(request, wrapper);
             } else if (isStorable(status) && content.length <= MAX_BODY_BYTES) {
-                safely(() -> service.complete(recordId, lease, status, storedBody, contentType, location));
+                safely(() -> service.complete(recordId, lease, stored));
             } else {
                 safely(() -> service.release(recordId, lease));
             }
@@ -192,12 +192,17 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         wrapper.copyBodyToResponse();
     }
 
+    /** The key record a request claimed and the lease that proves it still owns it. */
+    private record Ownership(UUID recordId, Instant lease) { }
+
     private void commitWithResponse(HttpServletRequest request, ContentCachingResponseWrapper wrapper,
-                                    TransactionStatus transaction, UUID recordId, Instant lease, int status,
-                                    String body, String contentType, String location) throws IOException {
+                                    TransactionStatus transaction, Ownership ownership,
+                                    IdempotencyService.StoredResponse stored) throws IOException {
+        UUID recordId = ownership.recordId();
+        Instant lease = ownership.lease();
         try {
             transaction.flush(); // Surface constraint violations before claiming the response.
-            if (!service.completeInCurrentTransaction(recordId, lease, status, body, contentType, location)) {
+            if (!service.completeInCurrentTransaction(recordId, lease, stored)) {
                 // A retry took over after our lease expired; it will apply the action instead.
                 rollbackQuietly(transaction);
                 replaceWithInProgress(request, wrapper);
@@ -228,17 +233,17 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         }
     }
 
-    private void replay(IdempotencyKeyModel record, HttpServletResponse response) throws IOException {
-        response.setStatus(record.getResponseStatus());
+    private void replay(IdempotencyKeyModel saved, HttpServletResponse response) throws IOException {
+        response.setStatus(saved.getResponseStatus());
         response.setHeader(REPLAYED_HEADER, "true");
-        if (record.getResponseContentType() != null) {
-            response.setContentType(record.getResponseContentType());
+        if (saved.getResponseContentType() != null) {
+            response.setContentType(saved.getResponseContentType());
         }
-        if (record.getLocationHeader() != null) {
-            response.setHeader(HttpHeaders.LOCATION, record.getLocationHeader());
+        if (saved.getLocationHeader() != null) {
+            response.setHeader(HttpHeaders.LOCATION, saved.getLocationHeader());
         }
-        if (record.getResponseBody() != null) {
-            byte[] bytes = record.getResponseBody().getBytes(StandardCharsets.UTF_8);
+        if (saved.getResponseBody() != null) {
+            byte[] bytes = saved.getResponseBody().getBytes(StandardCharsets.UTF_8);
             response.setContentLength(bytes.length);
             response.getOutputStream().write(bytes);
         }
