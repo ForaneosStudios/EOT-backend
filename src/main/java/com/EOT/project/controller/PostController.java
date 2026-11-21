@@ -1,5 +1,7 @@
 package com.EOT.project.controller;
 
+import com.EOT.project.concurrency.ClientIntent;
+import java.time.Instant;
 import com.EOT.project.dto.request.PostRequestDTO;
 import com.EOT.project.dto.request.PostUpdateRequestDTO;
 import com.EOT.project.dto.response.PostResponseDTO;
@@ -61,7 +63,10 @@ public class PostController {
                                                        Authentication authentication) {
         PostResponseDTO existing = postService.findById(id);
         currentUserService.requireOwnerOrAdmin(authentication, existing.getUserId());
-        return ResponseEntity.ok(postService.update(id, dto, currentUserService.isAdmin(authentication)));
+        boolean admin = currentUserService.isAdmin(authentication);
+        Instant intentAt = ClientIntent.current();
+        return ResponseEntity.ok(intentAt == null ? postService.update(id, dto, admin)
+                : postService.updateIfNewer(id, dto, admin, intentAt));
     }
 
     @DeleteMapping("/{id}")
