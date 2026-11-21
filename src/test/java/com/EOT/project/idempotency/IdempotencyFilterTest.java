@@ -35,10 +35,10 @@ class IdempotencyFilterTest {
     @BeforeEach
     void setup() {
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("sub-1", null, "ROLE_USER"));
-        IdempotencyKeyModel record = IdempotencyKeyModel.builder().id(recordId).status(IdempotencyStatus.IN_PROGRESS)
+        IdempotencyKeyModel claimed = IdempotencyKeyModel.builder().id(recordId).status(IdempotencyStatus.IN_PROGRESS)
                 .lockedUntil(lease).build();
         when(service.begin(any(), any(), any(), any(), any()))
-                .thenReturn(new IdempotencyService.Decision(IdempotencyService.Outcome.PROCEED, record, lease));
+                .thenReturn(new IdempotencyService.Decision(IdempotencyService.Outcome.PROCEED, claimed, lease));
         when(transactions.getTransaction(any())).thenReturn(transaction);
     }
 
@@ -64,7 +64,7 @@ class IdempotencyFilterTest {
 
     @Test
     void storesResponseInsideTheBusinessTransactionAndCommits() throws Exception {
-        when(service.completeInCurrentTransaction(eq(recordId), eq(lease), eq(201), any(), any(), any())).thenReturn(true);
+        when(service.completeInCurrentTransaction(eq(recordId), eq(lease), any())).thenReturn(true);
         MockHttpServletResponse response = new MockHttpServletResponse();
         filter.doFilter(request(), response, respondingWith(201));
         assertEquals(201, response.getStatus());
@@ -75,7 +75,7 @@ class IdempotencyFilterTest {
 
     @Test
     void commitFailureBecomesRetryable503AndReleasesKey() throws Exception {
-        when(service.completeInCurrentTransaction(any(), any(), anyInt(), any(), any(), any())).thenReturn(true);
+        when(service.completeInCurrentTransaction(any(), any(), any())).thenReturn(true);
         doThrow(new TransactionSystemException("connection lost")).when(transactions).commit(transaction);
         MockHttpServletResponse response = new MockHttpServletResponse();
         filter.doFilter(request(), response, respondingWith(201));
@@ -98,7 +98,7 @@ class IdempotencyFilterTest {
 
     @Test
     void requestThatLostItsLeaseRollsBackAndReportsInProgress() throws Exception {
-        when(service.completeInCurrentTransaction(any(), any(), anyInt(), any(), any(), any())).thenReturn(false);
+        when(service.completeInCurrentTransaction(any(), any(), any())).thenReturn(false);
         MockHttpServletResponse response = new MockHttpServletResponse();
         filter.doFilter(request(), response, respondingWith(201));
         assertEquals(409, response.getStatus());
@@ -124,7 +124,7 @@ class IdempotencyFilterTest {
         filter.doFilter(request(), response, respondingWith(409));
         assertEquals(409, response.getStatus());
         verify(transactions).rollback(transaction);
-        verify(service).complete(eq(recordId), eq(lease), eq(409), any(), any(), any());
+        verify(service).complete(eq(recordId), eq(lease), argThat(stored -> stored.status() == 409));
     }
 
     @Test
@@ -138,7 +138,9 @@ class IdempotencyFilterTest {
     @Test
     void unexpectedExceptionRollsBackReleasesAndPropagates() {
         FilterChain failing = (req, res) -> { throw new IllegalStateException("boom"); };
-        assertThrows(IllegalStateException.class, () -> filter.doFilter(request(), new MockHttpServletResponse(), failing));
+        MockHttpServletRequest request = request();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        assertThrows(IllegalStateException.class, () -> filter.doFilter(request, response, failing));
         verify(transactions).rollback(transaction);
         verify(service).release(recordId, lease);
     }

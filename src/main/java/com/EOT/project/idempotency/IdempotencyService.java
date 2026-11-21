@@ -37,9 +37,12 @@ public class IdempotencyService {
     public enum Outcome { PROCEED, REPLAY, IN_PROGRESS, MISMATCH }
 
     /** Result of claiming a key. {@code lease} identifies this request's ownership when PROCEED. */
-    public record Decision(Outcome outcome, IdempotencyKeyModel record, Instant lease) {
-        Decision(Outcome outcome, IdempotencyKeyModel record) {
-            this(outcome, record, record == null ? null : record.getLockedUntil());
+    /** The parts of a response that are stored for replay. */
+    public record StoredResponse(int status, String body, String contentType, String location) { }
+
+    public record Decision(Outcome outcome, IdempotencyKeyModel entry, Instant lease) {
+        Decision(Outcome outcome, IdempotencyKeyModel entry) {
+            this(outcome, entry, entry == null ? null : entry.getLockedUntil());
         }
     }
 
@@ -124,15 +127,14 @@ public class IdempotencyService {
      *
      * @return false if this request lost its lease; the caller must then roll back its changes.
      */
-    public boolean completeInCurrentTransaction(UUID id, Instant lease, int status, String body,
-                                                String contentType, String location) {
-        return keys.completeIfOwned(id, lease, status, body, truncate(contentType, 255), truncate(location, 1024),
-                IdempotencyStatus.COMPLETED, IdempotencyStatus.IN_PROGRESS) == 1;
+    public boolean completeInCurrentTransaction(UUID id, Instant lease, StoredResponse response) {
+        return keys.completeIfOwned(id, lease, response.status(), response.body(),
+                truncate(response.contentType(), 255), truncate(response.location(), 1024)) == 1;
     }
 
     /** Stores a response that changed nothing (e.g. a 404 or 409) in its own transaction. */
-    public boolean complete(UUID id, Instant lease, int status, String body, String contentType, String location) {
-        Boolean stored = tx.execute(s -> completeInCurrentTransaction(id, lease, status, body, contentType, location));
+    public boolean complete(UUID id, Instant lease, StoredResponse response) {
+        Boolean stored = tx.execute(s -> completeInCurrentTransaction(id, lease, response));
         return Boolean.TRUE.equals(stored);
     }
 
@@ -142,8 +144,9 @@ public class IdempotencyService {
     }
 
     public int deleteExpired() {
-        Integer deleted = tx.execute(s -> keys.deleteExpired(now()));
-        return deleted == null ? 0 : deleted;
+        int[] deleted = {0};
+        tx.executeWithoutResult(s -> deleted[0] = keys.deleteExpired(now()));
+        return deleted[0];
     }
 
     private static String truncate(String value, int max) {

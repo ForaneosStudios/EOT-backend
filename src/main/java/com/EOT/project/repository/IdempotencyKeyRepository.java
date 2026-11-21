@@ -33,13 +33,14 @@ public interface IdempotencyKeyRepository extends JpaRepository<IdempotencyKeyMo
     @Transactional
     @Modifying
     @Query("""
-            update IdempotencyKeyModel k set k.status = :completed, k.responseStatus = :status,
+            update IdempotencyKeyModel k
+            set k.status = com.EOT.project.model.IdempotencyStatus.COMPLETED, k.responseStatus = :status,
                 k.responseBody = :body, k.responseContentType = :contentType, k.locationHeader = :location
-            where k.id = :id and k.status = :inProgress and k.lockedUntil = :lease""")
+            where k.id = :id and k.status = com.EOT.project.model.IdempotencyStatus.IN_PROGRESS
+                and k.lockedUntil = :lease""")
     int completeIfOwned(@Param("id") UUID id, @Param("lease") Instant lease, @Param("status") int status,
                         @Param("body") String body, @Param("contentType") String contentType,
-                        @Param("location") String location, @Param("completed") IdempotencyStatus completed,
-                        @Param("inProgress") IdempotencyStatus inProgress);
+                        @Param("location") String location);
 
     @Transactional
     @Modifying

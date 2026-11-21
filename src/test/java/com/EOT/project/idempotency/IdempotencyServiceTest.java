@@ -46,18 +46,18 @@ class IdempotencyServiceTest {
     @Test
     void completedRequestIsReplayed() {
         var first = begin("key-done", "h1");
-        assertTrue(service.complete(first.record().getId(), first.lease(), 201, "{\"id\":1}", "application/json", null));
+        assertTrue(service.complete(first.entry().getId(), first.lease(), new IdempotencyService.StoredResponse(201, "{\"id\":1}", "application/json", null)));
         var replay = begin("key-done", "h1");
         assertEquals(IdempotencyService.Outcome.REPLAY, replay.outcome());
-        assertEquals(201, replay.record().getResponseStatus());
-        assertEquals("{\"id\":1}", replay.record().getResponseBody());
-        assertEquals(IdempotencyStatus.COMPLETED, replay.record().getStatus());
+        assertEquals(201, replay.entry().getResponseStatus());
+        assertEquals("{\"id\":1}", replay.entry().getResponseBody());
+        assertEquals(IdempotencyStatus.COMPLETED, replay.entry().getStatus());
     }
 
     @Test
     void releasedKeyCanRunAgain() {
         var first = begin("key-released", "h1");
-        service.release(first.record().getId(), first.lease());
+        service.release(first.entry().getId(), first.lease());
         assertEquals(IdempotencyService.Outcome.PROCEED, begin("key-released", "h1").outcome());
     }
 
@@ -72,7 +72,7 @@ class IdempotencyServiceTest {
     @Test
     void expiredRecordsAreTreatedAsNewAndPurged() {
         var first = begin("key-expired", "h1");
-        service.complete(first.record().getId(), first.lease(), 200, null, null, null);
+        service.complete(first.entry().getId(), first.lease(), new IdempotencyService.StoredResponse(200, null, null, null));
         clock.advance(IdempotencyService.TTL.plusMinutes(1));
         assertEquals(IdempotencyService.Outcome.PROCEED, begin("key-expired", "other-hash").outcome());
 
@@ -90,18 +90,18 @@ class IdempotencyServiceTest {
         assertEquals(IdempotencyService.Outcome.PROCEED, takeover.outcome());
 
         // The slow original must not store its result nor free the key the retry now owns.
-        assertFalse(service.complete(original.record().getId(), original.lease(), 201, "{}", null, null));
-        service.release(original.record().getId(), original.lease());
+        assertFalse(service.complete(original.entry().getId(), original.lease(), new IdempotencyService.StoredResponse(201, "{}", null, null)));
+        service.release(original.entry().getId(), original.lease());
         assertEquals(IdempotencyService.Outcome.IN_PROGRESS, begin("key-lost", "h1").outcome());
 
-        assertTrue(service.complete(takeover.record().getId(), takeover.lease(), 201, "{}", null, null));
+        assertTrue(service.complete(takeover.entry().getId(), takeover.lease(), new IdempotencyService.StoredResponse(201, "{}", null, null)));
         assertEquals(IdempotencyService.Outcome.REPLAY, begin("key-lost", "h1").outcome());
     }
 
     @Test
     void completedRequestIsNeverTakenOver() {
         var first = begin("key-finished", "h1");
-        service.complete(first.record().getId(), first.lease(), 201, "{}", null, null);
+        service.complete(first.entry().getId(), first.lease(), new IdempotencyService.StoredResponse(201, "{}", null, null));
         clock.advance(IdempotencyService.LEASE.plusMinutes(5));
         assertEquals(IdempotencyService.Outcome.REPLAY, begin("key-finished", "h1").outcome());
     }
