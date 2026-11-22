@@ -41,13 +41,13 @@ class PasswordResetSupportTest {
 
     @Test
     void mailerReportsConfigurationAndDeliveryResult() {
-        assertFalse(new PasswordResetMailer(provider(null), "a@b.c", "smtp.test").isConfigured());
-        assertFalse(new PasswordResetMailer(provider(mock(JavaMailSender.class)), "a@b.c", " ").isConfigured());
-        assertFalse(new PasswordResetMailer(provider(null), "a@b.c", "smtp.test").sendResetLink("x@y.z", "n", "l", 10));
+        assertFalse(new PasswordResetMailer(provider(null), "a@b.c", "smtp.test", "").isConfigured());
+        assertFalse(new PasswordResetMailer(provider(mock(JavaMailSender.class)), "a@b.c", " ", "").isConfigured());
+        assertFalse(new PasswordResetMailer(provider(null), "a@b.c", "smtp.test", "").sendResetLink("x@y.z", "n", "l", 10));
 
         JavaMailSender sender = mock(JavaMailSender.class);
         when(sender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
-        PasswordResetMailer mailer = new PasswordResetMailer(provider(sender), "a@b.c", "smtp.test");
+        PasswordResetMailer mailer = new PasswordResetMailer(provider(sender), "a@b.c", "smtp.test", "");
         assertTrue(mailer.isConfigured());
         assertTrue(mailer.sendResetLink("x@y.z", "n", "https://l", 10));
         verify(sender).send(any(MimeMessage.class));
@@ -130,5 +130,41 @@ class PasswordResetSupportTest {
         RequestRateLimiter limiter = new RequestRateLimiter();
         for (int i = 0; i < 10_001; i++) limiter.record("ip-" + i, 1);
         assertDoesNotThrow(() -> limiter.check("ip-1"));
+    }
+
+    @Test
+    void brevoApiIsUsedWhenAKeyIsConfigured() {
+        org.springframework.web.client.RestClient.Builder builder = org.springframework.web.client.RestClient.builder();
+        org.springframework.test.web.client.MockRestServiceServer server =
+                org.springframework.test.web.client.MockRestServiceServer.bindTo(builder).build();
+        PasswordResetMailer mailer = new PasswordResetMailer(provider(null), "Echoes of Time <no-reply@eot.test>", "", "key-123", builder.build());
+        assertTrue(mailer.isConfigured());
+
+        server.expect(org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo("https://api.brevo.com/v3/smtp/email"))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.header("api-key", "key-123"))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.sender.email").value("no-reply@eot.test"))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.sender.name").value("Echoes of Time"))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.to[0].email").value("x@y.z"))
+                .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess("{}", org.springframework.http.MediaType.APPLICATION_JSON));
+        assertTrue(mailer.sendResetLink("x@y.z", "Ana", "https://l", 10));
+        server.verify();
+
+        server.reset();
+        server.expect(org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo("https://api.brevo.com/v3/smtp/email"))
+                .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withUnauthorizedRequest());
+        assertFalse(mailer.sendResetLink("x@y.z", "Ana", "https://l", 10));
+    }
+
+    @Test
+    void brevoApiAcceptsAPlainSenderAddress() {
+        org.springframework.web.client.RestClient.Builder builder = org.springframework.web.client.RestClient.builder();
+        org.springframework.test.web.client.MockRestServiceServer server =
+                org.springframework.test.web.client.MockRestServiceServer.bindTo(builder).build();
+        PasswordResetMailer mailer = new PasswordResetMailer(provider(null), "no-reply@eot.test", "", "key", builder.build());
+        server.expect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.sender.email").value("no-reply@eot.test"))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath("$.sender.name").value("Echoes of Time"))
+                .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess());
+        assertTrue(mailer.sendResetLink("x@y.z", "Ana", "https://l", 10));
+        server.verify();
     }
 }
