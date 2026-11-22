@@ -82,6 +82,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**", "/api/v1/threads/**",
                         "/api/v1/posts/**", "/api/v1/achievements/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/availability").permitAll()
+                // Public ranking (usernames and times only).
+                .requestMatchers(HttpMethod.GET, "/api/v1/leaderboard").permitAll()
+                // Live streams were authorised when opened; later async dispatches carry no token.
+                .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/password-reset/request", "/api/v1/auth/password-reset/confirm").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/password-reset/validate").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
