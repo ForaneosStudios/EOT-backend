@@ -167,4 +167,14 @@ class PasswordResetSupportTest {
         assertTrue(mailer.sendResetLink("x@y.z", "Ana", "https://l", 10));
         server.verify();
     }
+
+    @Test
+    void passwordRulesMatchSignUp() {
+        assertThrows(com.EOT.project.exception.BadRequestException.class, () -> PasswordResetService.validatePassword(null));
+        assertThrows(com.EOT.project.exception.BadRequestException.class, () -> PasswordResetService.validatePassword("Abc1"));
+        assertThrows(com.EOT.project.exception.BadRequestException.class, () -> PasswordResetService.validatePassword("A1" + "a".repeat(71)));
+        assertThrows(com.EOT.project.exception.BadRequestException.class, () -> PasswordResetService.validatePassword("abcdefg1"));
+        assertThrows(com.EOT.project.exception.BadRequestException.class, () -> PasswordResetService.validatePassword("Abcdefgh"));
+        assertDoesNotThrow(() -> PasswordResetService.validatePassword("Abcdefg1"));
+    }
 }

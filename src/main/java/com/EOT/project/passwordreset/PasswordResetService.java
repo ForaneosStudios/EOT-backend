@@ -146,9 +146,16 @@ public class PasswordResetService {
                 .filter(t -> t.getUsedAt() == null && t.getExpiresAt().isAfter(now));
     }
 
-    private static void validatePassword(String password) {
-        if (password == null || password.length() < MIN_PASSWORD || password.length() > MAX_PASSWORD) {
-            throw new BadRequestException("La contraseña debe tener entre " + MIN_PASSWORD + " y " + MAX_PASSWORD + " caracteres");
+    /** Same rules as sign-up in the apps: 8 to 72 characters, at least one uppercase letter and one digit. */
+    static void validatePassword(String password) {
+        if (password == null || password.length() < MIN_PASSWORD) {
+            throw new BadRequestException("Debe tener al menos " + MIN_PASSWORD + " caracteres.");
+        }
+        if (password.length() > MAX_PASSWORD) {
+            throw new BadRequestException("No puede superar " + MAX_PASSWORD + " caracteres.");
+        }
+        if (password.chars().noneMatch(c -> c >= 'A' && c <= 'Z') || password.chars().noneMatch(c -> c >= '0' && c <= '9')) {
+            throw new BadRequestException("Incluye al menos una mayúscula y un número.");
         }
     }
 
