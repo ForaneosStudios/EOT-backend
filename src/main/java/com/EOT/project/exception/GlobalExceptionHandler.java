@@ -54,6 +54,13 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), request, null);
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequests(TooManyRequestsException ex, HttpServletRequest request) {
+        ResponseEntity<ErrorResponse> base = response(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS", ex.getMessage(), request, null);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds())).body(base.getBody());
+    }
+
     @ExceptionHandler(StaleWriteException.class)
     public ResponseEntity<ErrorResponse> handleStaleWrite(StaleWriteException ex, HttpServletRequest request) {
         ErrorResponse error = ErrorResponse.builder()

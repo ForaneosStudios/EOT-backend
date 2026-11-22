@@ -64,6 +64,11 @@ public class UserModel extends AuditableModel {
     @Column(name = "best_time_ms")
     private Long bestTimeMs;
 
+    /** Access tokens issued before this instant are rejected (set when the password is reset). */
+    @Column(name = "sessions_valid_after")
+    @JsonIgnore
+    private java.time.Instant sessionsValidAfter;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default

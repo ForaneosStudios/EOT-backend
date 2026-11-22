@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    sessions_valid_after TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -142,3 +143,13 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
     CONSTRAINT uq_idempotency_keys_owner_key UNIQUE (auth_sub, idem_key)
 );
 CREATE INDEX IF NOT EXISTS idx_idempotency_keys_expires_at ON idempotency_keys(expires_at);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token_id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used_at TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id);

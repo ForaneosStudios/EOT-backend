@@ -59,6 +59,12 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Correo SMTP (recuperacion de contraseña) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Validaciones -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
