@@ -2,6 +2,7 @@ package com.EOT.project.config;
 
 import com.EOT.project.idempotency.IdempotencyFilter;
 import com.EOT.project.idempotency.IdempotencyService;
+import com.EOT.project.model.UserModel;
 import com.EOT.project.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
@@ -81,6 +82,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**", "/api/v1/threads/**",
                         "/api/v1/posts/**", "/api/v1/achievements/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/availability").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/password-reset/request", "/api/v1/auth/password-reset/confirm").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/auth/password-reset/validate").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**", "/api/v1/achievements/**").hasRole("ADMIN")
@@ -100,7 +103,14 @@ public class SecurityConfig {
                 } catch (IllegalArgumentException ex) {
                     throw new BadCredentialsException("Invalid subject", ex);
                 }
-                var authorities = users.findByAuthUserIdAndIsDeletedFalse(authId)
+                var profile = users.findByAuthUserIdAndIsDeletedFalse(authId);
+                // A password reset closes every session: tokens issued before it are dead.
+                profile.map(UserModel::getSessionsValidAfter).ifPresent(cutoff -> {
+                    if (token.getIssuedAt() == null || token.getIssuedAt().isBefore(cutoff)) {
+                        throw new BadCredentialsException("Session closed by a password reset");
+                    }
+                });
+                var authorities = profile
                         .map(user -> List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
                         .orElseGet(List::of);
                 return new JwtAuthenticationToken(token, authorities, authId.toString());
