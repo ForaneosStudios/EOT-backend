@@ -175,6 +175,13 @@ class PasswordResetIntegrationTest {
     void expiredTokenAndWeakPasswordAreRejected() throws Exception {
         String token = requestAndCaptureToken();
         confirm(token, "corta").andExpect(status().isBadRequest());
+        confirm(token, "sinmayuscula1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Incluye al menos una mayúscula y un número."));
+        confirm(token, "SinNumeroAqui").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Incluye al menos una mayúscula y un número."));
+        // A rejected password does not burn the link.
+        mvc.perform(get("/api/v1/auth/password-reset/validate").param("token", token))
+                .andExpect(jsonPath("$.valid").value(true));
         verify(supabase, never()).resetPasswordAndRevokeSessions(eq(user.getAuthUserId()), anyString(), anyString());
 
         PasswordResetTokenModel stored = tokens.findFirstByUserIdOrderByCreatedAtDesc(user.getUserId()).orElseThrow();
