@@ -21,6 +21,9 @@ class GameTimeRecordServiceTest {
     @Mock
     private UserRepository users;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher events;
+
     @InjectMocks
     private GameTimeRecordService service;
 

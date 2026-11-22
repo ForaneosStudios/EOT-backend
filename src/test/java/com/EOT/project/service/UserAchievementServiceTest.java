@@ -36,6 +36,9 @@ class UserAchievementServiceTest {
     @Mock
     private AchievementRepository achievementRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher events;
+
     @InjectMocks
     private UserAchievementService service;
 
@@ -93,6 +96,17 @@ class UserAchievementServiceTest {
 
         assertTrue(result.getIsUnlocked());
         assertTrue(result.getProgress() == 10);
+        // A player without a linked Supabase account has no live stream to notify.
+        org.mockito.Mockito.verifyNoInteractions(events);
+
+        UUID authId = UUID.randomUUID();
+        user.setAuthUserId(authId);
+        service.updateProgress(request);
+        org.mockito.ArgumentCaptor<com.EOT.project.realtime.LiveEvent> sent = org.mockito.ArgumentCaptor.forClass(com.EOT.project.realtime.LiveEvent.class);
+        org.mockito.Mockito.verify(events).publishEvent(sent.capture());
+        assertTrue(sent.getValue().authUserId().equals(authId));
+        assertTrue(com.EOT.project.realtime.LiveEvent.ACHIEVEMENTS.equals(sent.getValue().type()));
+        assertTrue(Boolean.TRUE.equals(sent.getValue().data().get("unlocked")));
     }
 
     private UserAchievementProgressDTO requestWithProgress(Integer progress) {
