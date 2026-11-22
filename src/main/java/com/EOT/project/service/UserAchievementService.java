@@ -11,7 +11,9 @@ import com.EOT.project.model.UserModel;
 import com.EOT.project.repository.AchievementRepository;
 import com.EOT.project.repository.UserAchievementRepository;
 import com.EOT.project.repository.UserRepository;
+import com.EOT.project.realtime.LiveEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ public class UserAchievementService {
     private final UserAchievementRepository userAchievementRepository;
     private final UserRepository userRepository;
     private final AchievementRepository achievementRepository;
+    private final ApplicationEventPublisher events;
 
     @Transactional(readOnly = true)
     public List<UserAchievementResponseDTO> findByUserId(UUID userId) {
@@ -82,7 +85,12 @@ public class UserAchievementService {
             }
         }
 
-        return UserAchievementResponseDTO.fromModel(userAchievementRepository.save(record));
+        UserAchievementResponseDTO saved = UserAchievementResponseDTO.fromModel(userAchievementRepository.save(record));
+        if (user.getAuthUserId() != null) {
+            events.publishEvent(LiveEvent.toUser(user.getAuthUserId(), LiveEvent.ACHIEVEMENTS,
+                    Map.of("achId", achievement.getAchId(), "unlocked", Boolean.TRUE.equals(record.getIsUnlocked()))));
+        }
+        return saved;
     }
 
     private UserModel requireActiveUser(UUID userId) {

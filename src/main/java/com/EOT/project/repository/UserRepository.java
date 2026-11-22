@@ -31,6 +31,9 @@ public interface UserRepository extends JpaRepository<UserModel, UUID> {
 
     List<UserModel> findByIsDeletedFalse();
 
+    /** Fastest runs first; earlier accounts win ties. Used by the public leaderboard. */
+    List<UserModel> findByIsDeletedFalseAndBestTimeMsNotNullOrderByBestTimeMsAscCreatedAtAsc(org.springframework.data.domain.Pageable page);
+
     /** Loads the row with a write lock so concurrent edits are applied one after another. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from UserModel e where e.userId = :id")
