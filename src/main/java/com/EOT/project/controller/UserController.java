@@ -3,7 +3,9 @@ package com.EOT.project.controller;
 import com.EOT.project.concurrency.ClientIntent;
 import java.time.Instant;
 import com.EOT.project.dto.request.CreateProfileRequest;
+import com.EOT.project.dto.request.UpdateProfilePhotoRequest;
 import com.EOT.project.dto.request.UpdateProfilePictureRequest;
+import com.EOT.project.profilephoto.ProfilePhotoService;
 import com.EOT.project.dto.response.UserResponseDTO;
 import com.EOT.project.dto.response.UsernameAvailabilityResponse;
 import jakarta.validation.constraints.Pattern;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
     private final CurrentUserService currentUserService;
+    private final ProfilePhotoService profilePhotos;
 
     @GetMapping
     public List<UserResponseDTO> getAllUsers() { return userService.findAll(); }
@@ -61,6 +64,26 @@ public class UserController {
         Instant intentAt = ClientIntent.current();
         return intentAt == null ? userService.updateProfilePicture(userId, dto)
                 : userService.updateProfilePictureIfNewer(userId, dto, intentAt);
+    }
+
+    @PutMapping("/me/profile-photo")
+    public UserResponseDTO updateProfilePhoto(Authentication authentication,
+                                              @Valid @RequestBody UpdateProfilePhotoRequest dto) {
+        UUID userId = currentUserService.requireProfile(authentication).getUserId();
+        Instant intentAt = ClientIntent.current();
+        return intentAt == null ? profilePhotos.replace(userId, dto)
+                : profilePhotos.replaceIfNewer(userId, dto, intentAt);
+    }
+
+    @DeleteMapping("/me/profile-photo")
+    public UserResponseDTO removeProfilePhoto(Authentication authentication) {
+        return profilePhotos.remove(currentUserService.requireProfile(authentication).getUserId());
+    }
+
+    /** Moderation (administrators only, through the /users/** rule). */
+    @DeleteMapping("/{id}/profile-photo")
+    public UserResponseDTO removeProfilePhotoOf(@PathVariable UUID id) {
+        return profilePhotos.removeAsAdmin(id);
     }
 
     @DeleteMapping("/{id}")

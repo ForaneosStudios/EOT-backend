@@ -64,6 +64,10 @@ public class UserModel extends AuditableModel {
     @Column(name = "best_time_ms")
     private Long bestTimeMs;
 
+    /** When the player accepted showing their camera photo to others; null while using a catalog avatar. */
+    @Column(name = "profile_photo_consent_at")
+    private java.time.Instant profilePhotoConsentAt;
+
     /** Access tokens issued before this instant are rejected (set when the password is reset). */
     @Column(name = "sessions_valid_after")
     @JsonIgnore
