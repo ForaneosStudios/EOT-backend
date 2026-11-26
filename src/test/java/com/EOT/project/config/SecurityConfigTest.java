@@ -39,6 +39,7 @@ class SecurityConfigTest {
         assertFalse(config.getAllowCredentials());
         assertTrue(config.getExposedHeaders().contains("Idempotency-Replayed"));
         assertTrue(config.getExposedHeaders().contains("Retry-After"));
+        assertTrue(config.getExposedHeaders().contains("X-Request-Id"));
     }
 
     @Test
