@@ -9,6 +9,7 @@ import com.EOT.project.concurrency.ClientIntent;
 import com.EOT.project.exception.ResourceNotFoundException;
 import com.EOT.project.exception.StaleWriteException;
 import com.EOT.project.model.UserModel;
+import com.EOT.project.profilephoto.ProfilePhotoStorage;
 import com.EOT.project.repository.UserRepository;
 import java.util.List;
 import java.time.Instant;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final ProfilePhotoStorage profilePhotos;
 
     @Transactional(readOnly = true)
     public List<UserResponseDTO> findAll() {
@@ -61,6 +63,7 @@ public class UserService {
         UserModel user = userRepository.findById(userId)
                 .filter(existing -> !Boolean.TRUE.equals(existing.getIsDeleted()))
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        discardPhoto(user);
         user.setProfilePicture(dto.profilePicture());
         return UserResponseDTO.fromModel(userRepository.save(user));
     }
@@ -76,6 +79,7 @@ public class UserService {
             throw new StaleWriteException("Otro cambio mas reciente de tu perfil ya se aplico",
                     UserResponseDTO.fromModel(user));
         }
+        discardPhoto(user);
         user.setProfilePicture(dto.profilePicture());
         return UserResponseDTO.fromModel(userRepository.save(user));
     }
@@ -84,8 +88,17 @@ public class UserService {
     public void delete(UUID id) {
         UserModel user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        discardPhoto(user);
         user.setIsDeleted(true);
         user.setDeletedAt(Instant.now());
         userRepository.save(user);
+    }
+
+    /** Choosing a catalog avatar, or leaving, drops the camera photo: it is not kept without a purpose. */
+    private void discardPhoto(UserModel user) {
+        if (user.getProfilePhotoConsentAt() != null) {
+            profilePhotos.delete(user.getUserId());
+            user.setProfilePhotoConsentAt(null);
+        }
     }
 }
