@@ -4,7 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
+import com.EOT.project.logging.RequestIds;
+import com.EOT.project.logging.RequestLoggingFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.TransientDataAccessException;
@@ -63,13 +64,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StaleWriteException.class)
     public ResponseEntity<ErrorResponse> handleStaleWrite(StaleWriteException ex, HttpServletRequest request) {
+        request.setAttribute(RequestLoggingFilter.ERROR_CODE_ATTRIBUTE, "STALE_WRITE");
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.CONFLICT.value())
                 .code("STALE_WRITE")
                 .message(ex.getMessage())
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
-                .requestId(UUID.randomUUID().toString())
+                .requestId(RequestIds.current())
                 .current(ex.getCurrent())
                 .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
@@ -162,28 +164,29 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TransientDataAccessException.class)
     public ResponseEntity<ErrorResponse> handleTemporaryDatabaseFailure(TransientDataAccessException ex,
                                                                         HttpServletRequest request) {
-        String requestId = UUID.randomUUID().toString();
-        log.error("Fallo temporal de base de datos. requestId={}", requestId, ex);
+        String requestId = RequestIds.current();
+        log.error("Fallo temporal de base de datos. requestId={} {} {}", requestId, request.getMethod(), request.getRequestURI(), ex);
         return response(HttpStatus.SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE",
                 "El servicio no esta disponible temporalmente", request, null, requestId);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex, HttpServletRequest request) {
-        String requestId = UUID.randomUUID().toString();
-        log.error("Error inesperado al procesar una solicitud. requestId={}", requestId, ex);
+        String requestId = RequestIds.current();
+        log.error("Error inesperado al procesar una solicitud. requestId={} {} {}", requestId, request.getMethod(), request.getRequestURI(), ex);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
                 "Ha ocurrido un error inesperado en el servidor", request, null, requestId);
     }
 
     private ResponseEntity<ErrorResponse> response(HttpStatus status, String code, String message,
                                                     HttpServletRequest request, List<String> errors) {
-        return response(status, code, message, request, errors, UUID.randomUUID().toString());
+        return response(status, code, message, request, errors, RequestIds.current());
     }
 
     private ResponseEntity<ErrorResponse> response(HttpStatus status, String code, String message,
                                                     HttpServletRequest request, List<String> errors,
                                                     String requestId) {
+        request.setAttribute(RequestLoggingFilter.ERROR_CODE_ATTRIBUTE, code);
         ErrorResponse error = ErrorResponse.builder()
                 .status(status.value())
                 .code(code)
