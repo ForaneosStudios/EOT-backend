@@ -8,6 +8,7 @@ import com.EOT.project.exception.ConflictException;
 import com.EOT.project.exception.ResourceNotFoundException;
 import com.EOT.project.model.UserModel;
 import com.EOT.project.model.UserRole;
+import com.EOT.project.profilephoto.ProfilePhotoStorage;
 import com.EOT.project.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +35,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ProfilePhotoStorage profilePhotos;
 
     @InjectMocks
     private UserService userService;
@@ -214,5 +218,35 @@ class UserServiceTest {
                 .build();
         assertFalse(user.getIsDeleted());
         return user;
+    }
+
+    @Test
+    void choosingACatalogAvatarDropsTheCameraPhoto() {
+        UUID id = UUID.randomUUID();
+        UserModel user = user("player", "player@example.com");
+        user.setUserId(id);
+        user.setProfilePicture("https://project.supabase.co/storage/v1/object/public/profile-photos/x.jpg?v=1");
+        user.setProfilePhotoConsentAt(java.time.Instant.now());
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(UserModel.class))).thenAnswer(call -> call.getArgument(0));
+
+        UserResponseDTO result = userService.updateProfilePicture(id, new UpdateProfilePictureRequest("/avatars/avatar-4.svg"));
+
+        assertEquals("/avatars/avatar-4.svg", result.getProfilePicture());
+        assertNull(user.getProfilePhotoConsentAt());
+        verify(profilePhotos).delete(id);
+    }
+
+    @Test
+    void changingTheCatalogAvatarOfSomeoneWithoutAPhotoDoesNotTouchStorage() {
+        UUID id = UUID.randomUUID();
+        UserModel user = user("player", "player@example.com");
+        user.setUserId(id);
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(UserModel.class))).thenAnswer(call -> call.getArgument(0));
+
+        userService.updateProfilePicture(id, new UpdateProfilePictureRequest("/avatars/avatar-2.svg"));
+
+        verify(profilePhotos, never()).delete(any());
     }
 }

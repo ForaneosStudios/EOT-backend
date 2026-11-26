@@ -97,6 +97,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/v1/users/me/profile").authenticated()
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/users/me/profile-picture").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/v1/users/me/profile-photo").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/users/me/profile-photo").authenticated()
                 .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth -> oauth
