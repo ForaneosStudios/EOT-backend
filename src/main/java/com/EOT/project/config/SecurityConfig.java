@@ -2,6 +2,7 @@ package com.EOT.project.config;
 
 import com.EOT.project.idempotency.IdempotencyFilter;
 import com.EOT.project.idempotency.IdempotencyService;
+import com.EOT.project.logging.RequestLoggingFilter;
 import com.EOT.project.model.UserModel;
 import com.EOT.project.repository.UserRepository;
 import java.util.List;
@@ -64,6 +65,7 @@ public class SecurityConfig {
         http
             // Opt-in: only requests that send Idempotency-Key are affected. Runs after
             // authorization so keys are scoped per user and rejected requests never use one.
+            .addFilterAfter(new RequestLoggingFilter.UserMarker(), AuthorizationFilter.class)
             .addFilterAfter(new IdempotencyFilter(idempotencyService, objectMapper, transactionManager), AuthorizationFilter.class)
             // API clients authenticate with an explicit Bearer token, never with
             // automatically attached browser cookies. Keep CSRF enabled by default
@@ -140,7 +142,7 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of("*"));
         // Lets browser clients read the idempotency replay marker and retry hints.
         // Date lets browser clients estimate their clock offset for X-Client-Intent-At.
-        config.setExposedHeaders(List.of(IdempotencyFilter.REPLAYED_HEADER, "Retry-After", "Location", "Date"));
+        config.setExposedHeaders(List.of(IdempotencyFilter.REPLAYED_HEADER, "Retry-After", "Location", "Date", RequestLoggingFilter.REQUEST_ID_HEADER));
         config.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

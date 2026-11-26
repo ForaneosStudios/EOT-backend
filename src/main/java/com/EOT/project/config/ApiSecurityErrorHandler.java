@@ -6,7 +6,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
+import com.EOT.project.logging.RequestIds;
+import com.EOT.project.logging.RequestLoggingFilter;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -46,7 +47,8 @@ public class ApiSecurityErrorHandler implements AuthenticationEntryPoint, Access
         error.put("message", message);
         error.put("timestamp", Instant.now().toString());
         error.put("path", request.getRequestURI());
-        error.put("requestId", UUID.randomUUID().toString());
+        error.put("requestId", RequestIds.current());
+        request.setAttribute(RequestLoggingFilter.ERROR_CODE_ATTRIBUTE, code);
 
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
